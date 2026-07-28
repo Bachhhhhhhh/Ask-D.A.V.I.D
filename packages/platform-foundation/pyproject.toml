@@ -1,0 +1,15 @@
+[project]
+name = "ask-david-foundation"
+version = "0.1.0"
+description = "Typed, non-secret development configuration for Ask D.A.V.I.D."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic-settings>=2.7.0,<3.0.0",
+]
+
+[project.scripts]
+ask-david-validate-environment = "ask_david_foundation.validate_environment:main"
+
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
