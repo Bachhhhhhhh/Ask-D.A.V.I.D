@@ -5,9 +5,10 @@ future client configuration, loopback networking, health-check, timeout, and
 typed-response tests. `fixtures/` contains a versioned generic response schema
 and safe success/error examples.
 
-The Compose health check uses MockServer's Java health-check class. The pinned
-image is distroless, so health checks must not depend on an in-container shell
-or `curl`.
+The pinned MockServer image does not provide a supported container health
+check. The Goal 2 foundation therefore verifies that the service starts, but
+does not claim protocol readiness. Future contract and integration tests must
+own their explicit readiness criteria alongside their endpoint mappings.
 
 It intentionally defines no endpoint mappings and does not emulate AWS,
 Databricks, Doris, OpenSearch Serverless, a controlled tool service, an agent,

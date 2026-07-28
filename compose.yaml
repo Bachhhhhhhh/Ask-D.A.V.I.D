@@ -30,14 +30,6 @@ services:
     image: mockserver/mockserver:5.15.0
     ports:
       - "127.0.0.1:1080:1080"
-    healthcheck:
-      # The MockServer image is distroless: its Java health-check class makes
-      # the required PUT status request without relying on a shell or curl.
-      test:
-        ["CMD", "java", "-cp", "/mockserver-netty-jar-with-dependencies.jar", "org.mockserver.cli.HealthCheck"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
 
 volumes:
   postgres-data:
