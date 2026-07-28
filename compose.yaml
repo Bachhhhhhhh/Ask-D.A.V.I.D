@@ -31,7 +31,10 @@ services:
     ports:
       - "127.0.0.1:1080:1080"
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:1080/mockserver/status || exit 1"]
+      # The MockServer image is distroless: its Java health-check class makes
+      # the required PUT status request without relying on a shell or curl.
+      test:
+        ["CMD", "java", "-cp", "/mockserver-netty-jar-with-dependencies.jar", "org.mockserver.cli.HealthCheck"]
       interval: 5s
       timeout: 3s
       retries: 10
