@@ -98,3 +98,21 @@ Every completed goal must report:
 - Keep each roadmap goal isolated.
 - Do not commit unless explicitly requested.
 - Before completion, show the repository status and changed-file summary.
+
+## AWS Agent Toolkit boundaries
+
+- AWS Agent Toolkit and AWS MCP may be used only for AWS documentation
+  lookup, identity/account verification, read-only inspection,
+  troubleshooting, and non-destructive validation.
+- Before an AWS-related task, load a relevant installed AWS skill when one
+  exists and verify uncertain AWS details against AWS documentation.
+- Terraform is the exclusive mechanism for creating, changing, or deleting
+  AWS infrastructure. Do not replace it with AWS CLI, CDK, CloudFormation,
+  AWS MCP, or console actions.
+- Do not run `terraform plan`, `terraform apply`, destructive Terraform
+  commands, mutating AWS CLI/MCP APIs, or Goal 3B provisioning without the
+  explicit approval required by the approved Goal 3 plan.
+- Do not retrieve, print, commit, or transmit credentials, access keys,
+  secret keys, passwords, tokens, or Secrets Manager secret values.
+- Use `ap-southeast-1` for the Terraform development environment. Use
+  `us-east-1` only where AWS Agent Toolkit requires its service region.

@@ -55,13 +55,13 @@ Actual Green SM data is deferred until the platform passes synthetic end-to-end 
 │  ┌──────────────────────────────────────────────────────────────┐  │
 │  │ Supervisor Agent                                             │  │
 │  │ Planning · Routing · Parallel Execution · Result Merging     │  │
-│  └───────────────┬────────────────┬────────────────┬─────────────┘  │
-│                  │                │                │                │
-│                  ▼                ▼                ▼                │
+│  └───────────────┬────────────────┬────────────────┬────────────┘  │
+│                  │                │                │               │
+│                  ▼                ▼                ▼               │
 │       Structured Data      Unstructured Data     Analytics         │
 │           Agent               / RAG Agent          Agent           │
-│                  │                │                │                │
-│                  └────────────────┴────────────────┘                │
+│                  │                │                │               │
+│                  └────────────────┴────────────────┘               │
 │                                  │                                 │
 │                     Reflection and Guardrails                      │
 │                                  │                                 │
@@ -76,15 +76,15 @@ Actual Green SM data is deferred until the platform passes synthetic end-to-end 
        ┌──────┴──────┐             │             Databricks SQL
        │             │             │             or approved jobs
        ▼             ▼             ▼                   │
-    Doris       Databricks SQL  OpenSearch              │
-                  / Iceberg     Serverless              │
-       │             │             │                    │
-       └──────┬──────┘             │                    │
-              ▼                    │                    │
-       S3 + Apache Iceberg         │                    │
-              ▲                    │                    │
-              │                    │                    │
-       Databricks pipelines ───────┴────────────────────┘
+    Doris       Databricks SQL  OpenSearch             │
+                  / Iceberg     Serverless             │
+       │             │             │                   │
+       └──────┬──────┘             │                   │
+              ▼                    │                   │
+       S3 + Apache Iceberg         │                   │
+              ▲                    │                   │
+              │                    │                   │
+       Databricks pipelines ───────┴───────────────────┘
               │
        Unity Catalog governance
 ```
