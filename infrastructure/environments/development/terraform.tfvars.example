@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars (ignored by Git) and replace all placeholders.
+aws_account_id = "123456789012"
+aws_region = "ap-southeast-1"
+bucket_name_prefix = "ask-david-example"
+vpc_cidr = "10.42.0.0/16"
+public_subnet_cidr = "10.42.0.0/24"
+application_subnet_cidrs = ["10.42.16.0/20", "10.42.32.0/20"]
+data_subnet_cidrs = ["10.42.64.0/20", "10.42.80.0/20"]
+availability_zones = ["ap-southeast-1a", "ap-southeast-1b"]
+internal_ingress_cidrs = ["10.42.0.0/16"]
+rds_instance_class = "db.t4g.micro"
+redis_node_type = "cache.t4g.micro"

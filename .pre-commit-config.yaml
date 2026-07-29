@@ -36,3 +36,9 @@ repos:
         language: system
         pass_filenames: false
         stages: [pre-push]
+      - id: terraform-format
+        name: terraform format check
+        entry: terraform fmt -check -recursive infrastructure
+        language: system
+        pass_filenames: false
+        files: ^infrastructure/.*\.tf$

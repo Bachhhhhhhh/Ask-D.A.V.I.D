@@ -5,9 +5,10 @@ synthetic-data-only data and AI platform. The mandatory architecture contract
 is in [`docs/MASTER_GOAL.md`](docs/MASTER_GOAL.md),
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), and the accepted ADRs.
 
-Goal 2 provides development tooling only. It does not provision AWS resources,
-configure Databricks, deploy Doris, create OpenSearch collections, implement
-tool services, implement LangGraph, or contain Green SM data.
+Goal 3 Checkpoint 3A adds Terraform configuration and offline validation only.
+It has not provisioned AWS resources, configured Databricks, deployed Doris,
+created OpenSearch collections, implemented tool services or LangGraph, or
+introduced Green SM data.
 
 ## Quick start
 
@@ -34,3 +35,5 @@ make local-down
 See [development instructions](docs/DEVELOPMENT.md), the
 [repository map](docs/REPOSITORY_STRUCTURE.md), and
 [security rules](docs/SECURITY.md).
+
+For Terraform development, see [the infrastructure guide](infrastructure/README.md).

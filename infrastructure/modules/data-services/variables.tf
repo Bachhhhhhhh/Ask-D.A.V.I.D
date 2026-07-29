@@ -1,0 +1,10 @@
+variable "name_prefix" { type = string }
+variable "data_subnet_ids" { type = list(string) }
+variable "rds_security_group_id" { type = string }
+variable "redis_security_group_id" { type = string }
+variable "kms_key_arn" { type = string }
+variable "rds_instance_class" { type = string }
+variable "redis_node_type" { type = string }
+variable "rds_deletion_protection" { type = bool }
+variable "rds_skip_final_snapshot" { type = bool }
+variable "tags" { type = map(string) }

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -79,6 +80,69 @@ def check() -> None:
     security()
 
 
+TERRAFORM_DEVELOPMENT = "infrastructure/environments/development"
+
+
+def infra_format() -> None:
+    """Check Terraform formatting without modifying configuration."""
+    run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "fmt", "-check", "-recursive"])
+
+
+def infra_validate() -> None:
+    """Initialize local provider cache only and validate Terraform syntax."""
+    run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "init", "-backend=false"])
+    run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "validate"])
+
+
+def infra_test() -> None:
+    """Run mock-provider Terraform contract tests without AWS credentials."""
+    run(
+        [
+            "terraform",
+            f"-chdir={TERRAFORM_DEVELOPMENT}",
+            "test",
+            "-test-directory=tests",
+        ]
+    )
+
+
+def infra_lint() -> None:
+    """Run Terraform linting; tflint is an explicit development prerequisite."""
+    config_path = str(REPOSITORY_ROOT / "infrastructure" / ".tflint.hcl")
+    run(["tflint", "--init", f"--config={config_path}"])
+    run(["tflint", "--chdir=infrastructure", "--recursive", f"--config={config_path}"])
+
+
+def infra_security() -> None:
+    """Run offline static IaC security checks without cloud credentials."""
+    run(["trivy", "config", "--severity", "HIGH,CRITICAL", "--exit-code", "1", "infrastructure"])
+    run(["uv", "run", "detect-secrets-hook", "--baseline", ".secrets.baseline"])
+
+
+def infra_plan() -> None:
+    """Produce a connected read-only plan only after deliberate local approval."""
+    required_files = [
+        REPOSITORY_ROOT / TERRAFORM_DEVELOPMENT / "terraform.tfvars",
+        REPOSITORY_ROOT / TERRAFORM_DEVELOPMENT / "backend.hcl",
+    ]
+    has_identity = bool(
+        os.environ.get("AWS_PROFILE") or os.environ.get("AWS_WEB_IDENTITY_TOKEN_FILE")
+    )
+    if (
+        os.environ.get("ASK_DAVID_AWS_PLAN_APPROVED") != "true"
+        or not has_identity
+        or not all(path.exists() for path in required_files)
+    ):
+        raise RuntimeError(
+            "infra-plan is intentionally blocked. Set ASK_DAVID_AWS_PLAN_APPROVED=true, "
+            "provide AWS_PROFILE or workload identity, and create ignored terraform.tfvars "
+            "and backend.hcl. "
+            "This command never applies resources."
+        )
+    run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "init", "-backend-config=backend.hcl"])
+    run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "plan", "-input=false"])
+
+
 def local_up() -> None:
     """Start only local development dependencies and wait for health checks."""
     run(["docker", "compose", "--env-file", ".env.example", "up", "--detach", "--wait"])
@@ -119,6 +183,12 @@ COMMANDS = {
     "local-up": local_up,
     "local-down": local_down,
     "local-logs": local_logs,
+    "infra-format": infra_format,
+    "infra-validate": infra_validate,
+    "infra-test": infra_test,
+    "infra-lint": infra_lint,
+    "infra-security": infra_security,
+    "infra-plan": infra_plan,
     "clean": clean,
 }
 

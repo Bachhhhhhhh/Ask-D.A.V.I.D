@@ -1,0 +1,30 @@
+name: Terraform validation
+
+on:
+  pull_request:
+    paths: ["infrastructure/**", ".github/workflows/terraform.yml"]
+  push:
+    branches: [main]
+    paths: ["infrastructure/**", ".github/workflows/terraform.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: terraform-linters/setup-tflint@v4
+      - uses: aquasecurity/setup-trivy@v0.2.0
+      - name: Terraform formatting
+        run: terraform -chdir=infrastructure/environments/development fmt -check -recursive
+      - name: Terraform initialization without remote state
+        run: terraform -chdir=infrastructure/environments/development init -backend=false
+      - name: Terraform validation
+        run: terraform -chdir=infrastructure/environments/development validate
+      - name: Terraform lint
+        run: tflint --init --config "$GITHUB_WORKSPACE/infrastructure/.tflint.hcl" && tflint --chdir=infrastructure --recursive --config "$GITHUB_WORKSPACE/infrastructure/.tflint.hcl"
+      - name: Static IaC security scan
+        run: trivy config --severity HIGH,CRITICAL --exit-code 1 infrastructure
