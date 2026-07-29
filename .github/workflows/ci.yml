@@ -17,6 +17,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v5
+      - uses: hashicorp/setup-terraform@v3
       - name: Verify locked dependencies
         run: uv lock --check
       - name: Install dependencies
