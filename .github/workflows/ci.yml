@@ -69,6 +69,8 @@ jobs:
         run: make security
       - name: Git history secret scan
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
   codeql:
     runs-on: ubuntu-24.04
