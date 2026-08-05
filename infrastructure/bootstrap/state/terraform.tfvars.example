@@ -1,3 +1,12 @@
 aws_account_id = "123456789012"
 aws_region = "ap-southeast-1"
 bucket_name = "replace-with-unique-terraform-state-bucket"
+tags = {
+  Project            = "ask-david"
+  Environment        = "development"
+  Component          = "terraform-state"
+  ManagedBy          = "terraform"
+  Owner              = "REPLACE_WITH_APPROVED_OWNER"
+  CostCenter         = "REPLACE_WITH_APPROVED_COST_CENTER"
+  DataClassification = "infrastructure-metadata"
+}

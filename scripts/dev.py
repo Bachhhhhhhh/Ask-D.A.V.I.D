@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -23,7 +24,7 @@ SAFE_CLEAN_PATHS = (
 def run(command: list[str]) -> None:
     """Run a documented command without invoking a shell."""
     print("+", " ".join(command), flush=True)
-    subprocess.run(command, cwd=REPOSITORY_ROOT, check=True)
+    subprocess.run(command, cwd=REPOSITORY_ROOT, check=True)  # nosec B603
 
 
 def setup() -> None:
@@ -66,7 +67,7 @@ def validate_environment() -> None:
 
 def security() -> None:
     """Run source, dependency, and secret checks without cloud credentials."""
-    run(["uv", "run", "bandit", "-q", "-r", "packages"])
+    run(["uv", "run", "bandit", "-q", "-r", "packages", "scripts"])
     run(["uv", "run", "pip-audit"])
     run(["uv", "run", "detect-secrets-hook", "--baseline", ".secrets.baseline"])
 
@@ -81,15 +82,218 @@ def check() -> None:
 
 
 TERRAFORM_DEVELOPMENT = "infrastructure/environments/development"
+TERRAFORM_BOOTSTRAP = "infrastructure/bootstrap/state"
+
+HCL_ASSIGNMENT_PATTERN = re.compile(r"(?m)^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$")
+KMS_KEY_ARN_PATTERN = re.compile(
+    r"^arn:aws:kms:ap-southeast-1:(?P<account_id>[0-9]{12}):key/[0-9a-fA-F-]{36}$"
+)
+PLACEHOLDER_MARKERS = ("REPLACE_WITH", "<APPROVED", "<REPLACE", "TODO", "CHANGEME")
+
+BOOTSTRAP_REQUIRED_VARIABLES = {
+    "aws_account_id",
+    "aws_region",
+    "bucket_name",
+    "tags",
+}
+DEVELOPMENT_REQUIRED_VARIABLES = {
+    "aws_account_id",
+    "aws_region",
+    "project",
+    "environment",
+    "additional_tags",
+    "vpc_cidr",
+    "public_subnet_cidr",
+    "application_subnet_cidrs",
+    "data_subnet_cidrs",
+    "availability_zones",
+    "internal_ingress_cidrs",
+    "rds_instance_class",
+    "redis_node_type",
+    "rds_deletion_protection",
+    "rds_skip_final_snapshot",
+    "log_retention_days",
+    "enable_opensearch_foundation",
+    "opensearch_collection_prefix",
+    "bucket_name_prefix",
+}
+BACKEND_REQUIRED_VALUES = {
+    "bucket",
+    "key",
+    "region",
+    "encrypt",
+    "use_lockfile",
+    "kms_key_id",
+}
+MANDATORY_BOOTSTRAP_TAGS = {
+    "Project",
+    "Environment",
+    "Component",
+    "ManagedBy",
+    "Owner",
+    "CostCenter",
+    "DataClassification",
+}
+MANDATORY_ADDITIONAL_TAGS = {"Owner", "CostCenter"}
+
+
+def _read_assignments(path: Path) -> tuple[str, dict[str, str]]:
+    """Read simple top-level HCL assignments without rendering their values."""
+    text = path.read_text(encoding="utf-8")
+    return text, {key: value.strip() for key, value in HCL_ASSIGNMENT_PATTERN.findall(text)}
+
+
+def _map_keys(text: str, assignment: str) -> set[str]:
+    """Return keys from the simple literal map used by local tfvars files."""
+    match = re.search(
+        rf"(?ms)^\s*{re.escape(assignment)}\s*=\s*\{{(?P<body>.*?)^\s*\}}\s*$",
+        text,
+    )
+    if match is None:
+        return set()
+    return {key for key, _ in HCL_ASSIGNMENT_PATTERN.findall(match.group("body"))}
+
+
+def _unquote(value: str) -> str:
+    """Normalize a scalar HCL string for structural comparisons."""
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] == '"':
+        return value[1:-1]
+    return value
+
+
+def _is_placeholder(value: str) -> bool:
+    """Identify unresolved values without exposing them."""
+    normalized = _unquote(value).strip()
+    return not normalized or any(marker in normalized.upper() for marker in PLACEHOLDER_MARKERS)
+
+
+def _missing_assignments(assignments: dict[str, str], required: set[str]) -> list[str]:
+    return sorted(required.difference(assignments))
+
+
+def validate_infrastructure_preflight(repository_root: Path) -> tuple[list[str], bool]:
+    """Validate local pre-3B inputs without network or AWS access.
+
+    Returns validation errors and whether the state KMS ARN is intentionally
+    deferred until the approved bootstrap apply.
+    """
+    bootstrap_tfvars = repository_root / TERRAFORM_BOOTSTRAP / "terraform.tfvars"
+    development_tfvars = repository_root / TERRAFORM_DEVELOPMENT / "terraform.tfvars"
+    development_backend = repository_root / TERRAFORM_DEVELOPMENT / "backend.hcl"
+    required_files = (bootstrap_tfvars, development_tfvars, development_backend)
+    missing_files = [
+        str(path.relative_to(repository_root)) for path in required_files if not path.is_file()
+    ]
+    if missing_files:
+        return [f"missing required local file: {path}" for path in missing_files], False
+
+    bootstrap_text, bootstrap = _read_assignments(bootstrap_tfvars)
+    development_text, development = _read_assignments(development_tfvars)
+    _, backend = _read_assignments(development_backend)
+    errors: list[str] = []
+
+    for name in _missing_assignments(bootstrap, BOOTSTRAP_REQUIRED_VARIABLES):
+        errors.append(f"bootstrap terraform.tfvars is missing {name}")
+    for name in _missing_assignments(development, DEVELOPMENT_REQUIRED_VARIABLES):
+        errors.append(f"development terraform.tfvars is missing {name}")
+    for name in _missing_assignments(backend, BACKEND_REQUIRED_VALUES):
+        errors.append(f"development backend.hcl is missing {name}")
+
+    missing_bootstrap_tags = MANDATORY_BOOTSTRAP_TAGS.difference(_map_keys(bootstrap_text, "tags"))
+    if missing_bootstrap_tags:
+        errors.append("bootstrap tags are missing: " + ", ".join(sorted(missing_bootstrap_tags)))
+    missing_development_tags = MANDATORY_ADDITIONAL_TAGS.difference(
+        _map_keys(development_text, "additional_tags")
+    )
+    if missing_development_tags:
+        errors.append(
+            "development additional_tags are missing: "
+            + ", ".join(sorted(missing_development_tags))
+        )
+
+    for label, text in (
+        ("bootstrap terraform.tfvars", bootstrap_text),
+        ("development terraform.tfvars", development_text),
+    ):
+        if any(marker in text.upper() for marker in PLACEHOLDER_MARKERS):
+            errors.append(f"{label} still contains placeholder values")
+
+    if not _missing_assignments(backend, BACKEND_REQUIRED_VALUES):
+        for name in BACKEND_REQUIRED_VALUES.difference({"kms_key_id"}):
+            if _is_placeholder(backend[name]):
+                errors.append(f"development backend.hcl has an unresolved {name}")
+        if _unquote(backend["key"]) != "development/terraform.tfstate":
+            errors.append("development backend key must be development/terraform.tfstate")
+        if _unquote(backend["region"]) != "ap-southeast-1":
+            errors.append("development backend region must be ap-southeast-1")
+        if _unquote(backend["encrypt"]).lower() != "true":
+            errors.append("development backend encrypt must be true")
+        if _unquote(backend["use_lockfile"]).lower() != "true":
+            errors.append("development backend use_lockfile must be true")
+        if "bucket_name" in bootstrap and backend["bucket"] != bootstrap["bucket_name"]:
+            errors.append("development backend bucket must match the bootstrap bucket_name")
+        if "aws_region" in bootstrap and backend["region"] != bootstrap["aws_region"]:
+            errors.append("development backend region must match the bootstrap region")
+        if (
+            "aws_account_id" in bootstrap
+            and "aws_account_id" in development
+            and bootstrap["aws_account_id"] != development["aws_account_id"]
+        ):
+            errors.append("bootstrap and development AWS account IDs must match")
+        if "aws_region" in development and backend["region"] != development["aws_region"]:
+            errors.append("development backend and tfvars regions must match")
+
+    kms_deferred = "kms_key_id" in backend and _is_placeholder(backend["kms_key_id"])
+    if "kms_key_id" in backend and not kms_deferred:
+        kms_key_arn = _unquote(backend["kms_key_id"])
+        kms_match = KMS_KEY_ARN_PATTERN.fullmatch(kms_key_arn)
+        if kms_match is None:
+            errors.append("development backend kms_key_id must be an ap-southeast-1 KMS key ARN")
+        elif "aws_account_id" in bootstrap and (
+            kms_match.group("account_id") != _unquote(bootstrap["aws_account_id"])
+        ):
+            errors.append("development backend KMS key must belong to the approved AWS account")
+
+    for relative_path in (
+        Path(TERRAFORM_BOOTSTRAP) / "versions.tf",
+        Path(TERRAFORM_DEVELOPMENT) / "versions.tf",
+    ):
+        source = (repository_root / relative_path).read_text(encoding="utf-8")
+        if 'backend "s3" {}' not in source:
+            errors.append(f"{relative_path} is missing the partial S3 backend declaration")
+
+    return errors, kms_deferred
+
+
+def infra_preflight(*, require_resolved_kms: bool = False) -> None:
+    """Check pre-3B local configuration without contacting AWS."""
+    errors, kms_deferred = validate_infrastructure_preflight(REPOSITORY_ROOT)
+    if errors:
+        raise RuntimeError("Infrastructure preflight failed:\n- " + "\n- ".join(errors))
+    if require_resolved_kms and kms_deferred:
+        raise RuntimeError(
+            "Infrastructure preflight failed: kms_key_id must be populated from the "
+            "approved state_kms_key_arn bootstrap output before a connected plan."
+        )
+    if kms_deferred:
+        print(
+            "Infrastructure preflight passed. kms_key_id remains intentionally deferred "
+            "until the approved state bootstrap apply."
+        )
+    else:
+        print("Infrastructure preflight passed with a structurally valid state KMS key ARN.")
 
 
 def infra_format() -> None:
     """Check Terraform formatting without modifying configuration."""
-    run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "fmt", "-check", "-recursive"])
+    run(["terraform", "fmt", "-check", "-recursive", "infrastructure"])
 
 
 def infra_validate() -> None:
     """Initialize local provider cache only and validate Terraform syntax."""
+    run(["terraform", f"-chdir={TERRAFORM_BOOTSTRAP}", "init", "-backend=false"])
+    run(["terraform", f"-chdir={TERRAFORM_BOOTSTRAP}", "validate"])
     run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "init", "-backend=false"])
     run(["terraform", f"-chdir={TERRAFORM_DEVELOPMENT}", "validate"])
 
@@ -121,6 +325,7 @@ def infra_security() -> None:
 
 def infra_plan() -> None:
     """Produce a connected read-only plan only after deliberate local approval."""
+    infra_preflight(require_resolved_kms=True)
     required_files = [
         REPOSITORY_ROOT / TERRAFORM_DEVELOPMENT / "terraform.tfvars",
         REPOSITORY_ROOT / TERRAFORM_DEVELOPMENT / "backend.hcl",
@@ -184,6 +389,7 @@ COMMANDS = {
     "local-down": local_down,
     "local-logs": local_logs,
     "infra-format": infra_format,
+    "infra-preflight": infra_preflight,
     "infra-validate": infra_validate,
     "infra-test": infra_test,
     "infra-lint": infra_lint,

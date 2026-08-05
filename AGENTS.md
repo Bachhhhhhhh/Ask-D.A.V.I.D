@@ -9,6 +9,7 @@ Before planning or implementing any goal, read:
 3. `docs/NON_GOALS.md`
 4. `docs/ROADMAP.md`
 5. All accepted ADRs under `docs/adr/`
+6. `docs/PROJECT_STATUS.md`
 
 These documents define mandatory architecture constraints.
 

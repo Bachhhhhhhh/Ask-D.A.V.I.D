@@ -4,7 +4,7 @@ param(
     [ValidateSet(
         "setup", "format", "format-check", "lint", "typecheck", "test", "validate-env",
         "security", "check", "local-up", "local-down", "local-logs", "infra-format", "infra-validate",
-        "infra-lint", "infra-security", "infra-test", "infra-plan", "clean"
+        "infra-lint", "infra-security", "infra-test", "infra-preflight", "infra-plan", "clean"
     )]
     [string]$Command
 )

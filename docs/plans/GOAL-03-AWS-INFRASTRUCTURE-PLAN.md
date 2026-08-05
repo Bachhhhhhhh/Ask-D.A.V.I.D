@@ -35,7 +35,7 @@ infrastructure/
   .tflint.hcl
   bootstrap/state/
     versions.tf providers.tf variables.tf main.tf outputs.tf
-    terraform.tfvars.example README.md
+    terraform.tfvars.example backend.hcl.example README.md
   environments/development/
     versions.tf providers.tf variables.tf locals.tf main.tf outputs.tf
     backend.hcl.example terraform.tfvars.example README.md
@@ -168,7 +168,8 @@ verbose Terraform logging. The Terraform identity alone receives state access.
 4. Run the following checks without AWS credentials:
 
 ```powershell
-terraform -chdir=infrastructure/environments/development fmt -check -recursive
+terraform fmt -check -recursive infrastructure
+python scripts/dev.py infra-preflight
 terraform -chdir=infrastructure/environments/development init -backend=false
 terraform -chdir=infrastructure/environments/development validate
 terraform -chdir=infrastructure/environments/development test

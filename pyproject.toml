@@ -34,14 +34,14 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["packages/platform-foundation/src"]
+files = ["packages/platform-foundation/src", "scripts/dev.py"]
 strict = true
 warn_unused_configs = true
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["packages/platform-foundation/src"]
+pythonpath = [".", "packages/platform-foundation/src"]
 addopts = "-ra --strict-markers -m 'not integration and not cloud' --cov=ask_david_foundation --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=90"
 markers = [
   "integration: tests requiring local services; excluded from the default test run.",
@@ -57,5 +57,5 @@ show_missing = true
 skip_covered = true
 
 [tool.bandit]
-targets = ["packages"]
+targets = ["packages", "scripts"]
 exclude_dirs = ["tests"]

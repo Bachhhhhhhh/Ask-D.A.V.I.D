@@ -1,0 +1,7 @@
+# Populate this ignored backend.hcl only after the approved bootstrap apply.
+bucket       = "REPLACE_WITH_STATE_BUCKET_OUTPUT"
+key          = "bootstrap/terraform.tfstate"
+region       = "ap-southeast-1"
+encrypt      = true
+use_lockfile = true
+kms_key_id   = "REPLACE_WITH_STATE_KMS_KEY_ARN_OUTPUT"

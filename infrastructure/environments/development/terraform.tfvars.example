@@ -1,6 +1,12 @@
 # Copy to terraform.tfvars (ignored by Git) and replace all placeholders.
 aws_account_id = "123456789012"
 aws_region = "ap-southeast-1"
+project = "ask-david"
+environment = "development"
+additional_tags = {
+  Owner      = "REPLACE_WITH_APPROVED_OWNER"
+  CostCenter = "REPLACE_WITH_APPROVED_COST_CENTER"
+}
 bucket_name_prefix = "ask-david-example"
 vpc_cidr = "10.42.0.0/16"
 public_subnet_cidr = "10.42.0.0/24"
@@ -10,3 +16,8 @@ availability_zones = ["ap-southeast-1a", "ap-southeast-1b"]
 internal_ingress_cidrs = ["10.42.0.0/16"]
 rds_instance_class = "db.t4g.micro"
 redis_node_type = "cache.t4g.micro"
+rds_deletion_protection = true
+rds_skip_final_snapshot = false
+log_retention_days = 30
+enable_opensearch_foundation = false
+opensearch_collection_prefix = "ask-david"

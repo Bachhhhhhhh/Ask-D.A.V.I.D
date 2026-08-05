@@ -4,11 +4,14 @@ run "development_foundation_is_plannable" {
   command = plan
 
   variables {
-    aws_account_id               = "123456789012"
-    aws_region                   = "ap-southeast-1"
-    project                      = "ask-david"
-    environment                  = "development"
-    additional_tags              = {}
+    aws_account_id = "123456789012"
+    aws_region     = "ap-southeast-1"
+    project        = "ask-david"
+    environment    = "development"
+    additional_tags = {
+      Owner      = "platform-team"
+      CostCenter = "development"
+    }
     vpc_cidr                     = "10.42.0.0/16"
     public_subnet_cidr           = "10.42.0.0/24"
     application_subnet_cidrs     = ["10.42.16.0/20", "10.42.32.0/20"]

@@ -40,3 +40,9 @@ After written approval for an identified development account, run a reviewed
 read-only `infrastructure/scripts/smoke.ps1 -ConfirmCheckpoint3B` script. A
 subsequent `terraform plan -input=false` must show no unexpected drift. Do not
 run these commands as part of Checkpoint 3A.
+
+Before requesting that approval, run the credential-free `infra-preflight`.
+All local environment inputs and backend values must be complete except for
+the state KMS ARN, which is intentionally supplied from the approved bootstrap
+output before connected development initialization. Bootstrap and development
+state use distinct S3 object keys.

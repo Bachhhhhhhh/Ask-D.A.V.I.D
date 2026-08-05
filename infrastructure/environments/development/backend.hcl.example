@@ -1,7 +1,7 @@
 # Bootstrap state first; then copy this file to backend.hcl and replace values.
 bucket       = "REPLACE_WITH_UNIQUE_TERRAFORM_STATE_BUCKET"
-key          = "ask-david/development/terraform.tfstate"
-region       = "REPLACE_WITH_AWS_REGION"
+key          = "development/terraform.tfstate"
+region       = "ap-southeast-1"
 encrypt      = true
 use_lockfile = true
 kms_key_id   = "REPLACE_WITH_KMS_KEY_ARN"

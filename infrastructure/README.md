@@ -13,6 +13,7 @@ RAG, services, agents, Databricks resources, Doris, or data.
 
 ```powershell
 .\scripts\dev.ps1 infra-format
+.\scripts\dev.ps1 infra-preflight
 .\scripts\dev.ps1 infra-validate
 .\scripts\dev.ps1 infra-test
 .\scripts\dev.ps1 infra-lint
@@ -23,6 +24,15 @@ RAG, services, agents, Databricks resources, Doris, or data.
 `infra-plan` is read-only but deliberately requires a user-created ignored
 `terraform.tfvars`, `backend.hcl`, an AWS identity, and
 `ASK_DAVID_AWS_PLAN_APPROVED=true`. It never runs `apply`.
+
+`infra-preflight` is fully offline. It checks that the ignored bootstrap and
+development variable files contain every required assignment, mandatory
+ownership/cost tags agree, backend bucket/account/region values agree, state
+keys cannot collide, and no non-KMS placeholder remains. The development
+backend `kms_key_id` is intentionally allowed to remain unresolved until the
+approved state bootstrap apply returns `state_kms_key_arn`.
+`infra-plan` reruns the same checks in strict mode and refuses a connected
+plan while that KMS ARN is still deferred.
 
 Remote state is bootstrapped only after separate Checkpoint 3B approval; see
 `bootstrap/state/README.md`. State and plans are sensitive and ignored.
@@ -35,5 +45,8 @@ winget install TerraformLint.TFLint
 winget install AquaSecurity.Trivy
 ```
 
-The development lock file is committed to pin the AWS provider; `.terraform/`,
+Both Terraform roots declare a partial S3 backend. Checkpoint 3A validation
+must initialize them with `-backend=false`; connected backend initialization
+is reserved for Checkpoint 3B. The development lock file is committed to pin
+the AWS provider; `.terraform/`,
 state, plans, local backend settings, and real variable values are ignored.
