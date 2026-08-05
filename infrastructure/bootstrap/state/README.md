@@ -4,15 +4,16 @@ The bootstrap root creates an encrypted, versioned, public-blocked state bucket
 and KMS key using **local state only**. It must be reviewed and applied only in
 Checkpoint 3B with explicit approval for the target development AWS account.
 
-Before that approval, `terraform init -backend=false` is the only permitted
-bootstrap initialization. After the approved bootstrap apply:
+Before that approval, initialize and plan/apply this root with local state;
+it deliberately has no backend declaration. After the approved bootstrap apply:
 
 1. Read the non-secret `state_bucket_name` and `state_kms_key_arn` outputs.
-2. Copy `backend.hcl.example` to the ignored `backend.hcl` in this directory,
+2. Copy `backend.tf.example` to the ignored `backend.tf` in this directory.
+3. Copy `backend.hcl.example` to the ignored `backend.hcl` in this directory,
    use `bootstrap/terraform.tfstate` as its key, and insert those outputs.
-3. Migrate the bootstrap local state with `terraform init -migrate-state
+4. Migrate the bootstrap local state with `terraform init -migrate-state
    -backend-config=backend.hcl`.
-4. Put the same bucket, region, and KMS ARN in the development backend while
+5. Put the same bucket, region, and KMS ARN in the development backend while
    using the distinct key `development/terraform.tfstate`.
 
 Retain access only for approved Terraform principals. State is sensitive: it

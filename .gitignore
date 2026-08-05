@@ -39,6 +39,7 @@ compose.override.yaml
 *.tfvars
 !*.tfvars.example
 backend.hcl
+infrastructure/bootstrap/state/backend.tf
 crash.log
 override.tf
 override.tf.json

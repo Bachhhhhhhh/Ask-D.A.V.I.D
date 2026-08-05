@@ -9,11 +9,12 @@ bucket uses S3 versioning, public-access blocking, SSE-KMS, a TLS-only bucket
 policy, and native S3 lockfiles. The development backend example uses
 `use_lockfile = true`; no DynamoDB lock table is required.
 
-The bootstrap begins with local state solely for the approved bootstrap step.
-Both roots declare an empty partial S3 backend. Checkpoint 3A initializes them
+The bootstrap root begins with local state solely for the approved bootstrap
+step and deliberately has no S3 backend declaration. The development root
+alone declares an empty partial S3 backend and Checkpoint 3A initializes it
 with `-backend=false`. Immediately after the approved bootstrap apply, create
-an ignored bootstrap `backend.hcl` from its example and migrate that state to
-the new encrypted bucket with `terraform init -migrate-state
+ignored bootstrap `backend.tf` and `backend.hcl` files from their examples and
+migrate that state to the new encrypted bucket with `terraform init -migrate-state
 -backend-config=backend.hcl`.
 
 Bootstrap and development use the same approved state bucket and KMS key but

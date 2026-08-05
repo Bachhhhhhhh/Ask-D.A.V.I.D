@@ -83,6 +83,7 @@ def check() -> None:
 
 TERRAFORM_DEVELOPMENT = "infrastructure/environments/development"
 TERRAFORM_BOOTSTRAP = "infrastructure/bootstrap/state"
+BOOTSTRAP_BACKEND_TEMPLATE = Path(TERRAFORM_BOOTSTRAP) / "backend.tf.example"
 
 HCL_ASSIGNMENT_PATTERN = re.compile(r"(?m)^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$")
 KMS_KEY_ARN_PATTERN = re.compile(
@@ -255,13 +256,23 @@ def validate_infrastructure_preflight(repository_root: Path) -> tuple[list[str],
         ):
             errors.append("development backend KMS key must belong to the approved AWS account")
 
-    for relative_path in (
-        Path(TERRAFORM_BOOTSTRAP) / "versions.tf",
-        Path(TERRAFORM_DEVELOPMENT) / "versions.tf",
+    bootstrap_source = (repository_root / Path(TERRAFORM_BOOTSTRAP) / "versions.tf").read_text(
+        encoding="utf-8"
+    )
+    if 'backend "s3"' in bootstrap_source:
+        errors.append(
+            "bootstrap versions.tf must not configure a backend before the local-state apply"
+        )
+    bootstrap_template = repository_root / BOOTSTRAP_BACKEND_TEMPLATE
+    if not bootstrap_template.is_file() or 'backend "s3" {}' not in bootstrap_template.read_text(
+        encoding="utf-8"
     ):
-        source = (repository_root / relative_path).read_text(encoding="utf-8")
-        if 'backend "s3" {}' not in source:
-            errors.append(f"{relative_path} is missing the partial S3 backend declaration")
+        errors.append("bootstrap backend.tf.example must provide the post-apply partial S3 backend")
+    development_source = (repository_root / Path(TERRAFORM_DEVELOPMENT) / "versions.tf").read_text(
+        encoding="utf-8"
+    )
+    if 'backend "s3" {}' not in development_source:
+        errors.append("development versions.tf is missing the partial S3 backend declaration")
 
     return errors, kms_deferred
 

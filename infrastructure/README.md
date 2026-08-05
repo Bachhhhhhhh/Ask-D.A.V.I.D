@@ -45,8 +45,8 @@ winget install TerraformLint.TFLint
 winget install AquaSecurity.Trivy
 ```
 
-Both Terraform roots declare a partial S3 backend. Checkpoint 3A validation
-must initialize them with `-backend=false`; connected backend initialization
-is reserved for Checkpoint 3B. The development lock file is committed to pin
-the AWS provider; `.terraform/`,
+The bootstrap root deliberately uses local state until its approved first
+apply. The development root declares a partial S3 backend and Checkpoint 3A
+must initialize it with `-backend=false`; connected backend initialization is
+reserved for Checkpoint 3B. The development lock file is committed to pin the AWS provider; `.terraform/`,
 state, plans, local backend settings, and real variable values are ignored.

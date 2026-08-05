@@ -11,7 +11,10 @@ def write_preflight_fixture(root: Path, *, include_cost_center: bool = True) -> 
     development = root / "infrastructure/environments/development"
     bootstrap.mkdir(parents=True)
     development.mkdir(parents=True)
-    (bootstrap / "versions.tf").write_text('terraform {\n  backend "s3" {}\n}\n', encoding="utf-8")
+    (bootstrap / "versions.tf").write_text("terraform {}\n", encoding="utf-8")
+    (bootstrap / "backend.tf.example").write_text(
+        'terraform {\n  backend "s3" {}\n}\n', encoding="utf-8"
+    )
     (development / "versions.tf").write_text(
         'terraform {\n  backend "s3" {}\n}\n', encoding="utf-8"
     )

@@ -1,0 +1,5 @@
+# Copy to the ignored backend.tf only after the approved bootstrap apply.
+# This declaration enables the subsequent local-state migration to S3.
+terraform {
+  backend "s3" {}
+}

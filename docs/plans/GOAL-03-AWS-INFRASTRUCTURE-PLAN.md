@@ -35,7 +35,7 @@ infrastructure/
   .tflint.hcl
   bootstrap/state/
     versions.tf providers.tf variables.tf main.tf outputs.tf
-    terraform.tfvars.example backend.hcl.example README.md
+    terraform.tfvars.example backend.tf.example backend.hcl.example README.md
   environments/development/
     versions.tf providers.tf variables.tf locals.tf main.tf outputs.tf
     backend.hcl.example terraform.tfvars.example README.md
@@ -146,9 +146,10 @@ Terraform state is sensitive. The strategy is an isolated S3 backend with
 SSE-KMS, versioning, public-access blocking, a TLS-only bucket policy, and
 Terraform S3 lockfiles (`use_lockfile = true`).
 
-The separate `bootstrap/state` root initially uses local state only for the
-first approved development bootstrap. Immediately after creation, its state is
-migrated into the newly created encrypted state bucket. Development state uses
+The separate `bootstrap/state` root initially has no backend declaration and
+uses local state only for the first approved development bootstrap. Immediately
+after creation, copy its ignored `backend.tf` and `backend.hcl` from the tracked
+examples and migrate state into the newly created encrypted state bucket. Development state uses
 the isolated key `development/terraform.tfstate`. No staging or production
 environment root is created in Goal 3.
 
