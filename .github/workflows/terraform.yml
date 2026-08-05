@@ -14,7 +14,7 @@ jobs:
   terraform:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
       - uses: terraform-linters/setup-tflint@v4
       # v0.2.6 is pinned to its full known-safe commit after GHSA-69fq-xp46-6x23.
