@@ -24,5 +24,10 @@ different object keys: `bootstrap/terraform.tfstate` and
 `backend.hcl` files, real `.tfvars`, state, plans, and provider caches local;
 they are covered by `.gitignore`.
 
+The bootstrap KMS policy binds state-key use to the approved Terraform caller
+identity, S3 in `ap-southeast-1`, and the exact state bucket encryption
+context. A change of Terraform operator is a reviewed policy change, not an
+implicit IAM inheritance.
+
 Checkpoint 3A never applies the bootstrap or development roots. Checkpoint 3B
 requires explicit approval for one named development account and region.

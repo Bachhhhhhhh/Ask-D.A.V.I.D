@@ -19,3 +19,8 @@ it deliberately has no backend declaration. After the approved bootstrap apply:
 Retain access only for approved Terraform principals. State is sensitive: it
 can contain resource metadata and values marked sensitive; never commit state
 files, plan files, or backend credentials.
+
+The KMS key policy captures the caller identity that performs the approved
+bootstrap apply. It permits that identity to manage the key and use it only
+through S3 for the state bucket. A later operator identity requires a reviewed
+Terraform policy change before it can access state.
