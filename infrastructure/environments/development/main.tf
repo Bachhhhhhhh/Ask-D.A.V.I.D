@@ -13,6 +13,8 @@ module "network" {
 module "kms" {
   source      = "../../modules/kms"
   name_prefix = local.name_prefix
+  account_id  = var.aws_account_id
+  region      = var.aws_region
   tags        = local.tags
 }
 module "storage" {
@@ -51,18 +53,41 @@ module "data_services" {
   tags                    = local.tags
 }
 module "observability" {
-  source         = "../../modules/observability"
-  name_prefix    = local.name_prefix
-  vpc_id         = module.network.vpc_id
-  retention_days = var.log_retention_days
-  kms_key_arn    = module.kms.observability_key_arn
-  tags           = local.tags
+  source                          = "../../modules/observability"
+  name_prefix                     = local.name_prefix
+  vpc_id                          = module.network.vpc_id
+  retention_days                  = var.log_retention_days
+  kms_key_arn                     = module.kms.observability_key_arn
+  account_id                      = var.aws_account_id
+  region                          = var.aws_region
+  rds_instance_identifier         = module.data_services.rds_instance_identifier
+  rds_cpu_alarm_threshold_percent = var.rds_cpu_alarm_threshold_percent
+  tags                            = local.tags
 }
 module "iam" {
   source                = "../../modules/iam"
   name_prefix           = local.name_prefix
   runtime_log_group_arn = module.observability.runtime_log_group_arn
   tags                  = local.tags
+}
+module "ecr_pull_through" {
+  source = "../../modules/ecr-pull-through"
+}
+module "smoke_test" {
+  source = "../../modules/smoke-test"
+
+  name_prefix           = local.name_prefix
+  account_id            = var.aws_account_id
+  region                = var.aws_region
+  runtime_log_group_arn = module.observability.runtime_log_group_arn
+  rds_endpoint          = module.data_services.rds_endpoint
+  rds_master_secret_arn = module.data_services.rds_master_secret_arn
+  redis_endpoint        = module.data_services.redis_endpoint
+  raw_bucket_name       = module.storage.bucket_names["raw"]
+  curated_bucket_name   = module.storage.bucket_names["curated"]
+  tags                  = local.tags
+
+  depends_on = [module.ecr_pull_through]
 }
 module "opensearch_foundation" {
   source             = "../../modules/opensearch-foundation"

@@ -114,6 +114,7 @@ DEVELOPMENT_REQUIRED_VARIABLES = {
     "rds_deletion_protection",
     "rds_skip_final_snapshot",
     "log_retention_days",
+    "rds_cpu_alarm_threshold_percent",
     "enable_opensearch_foundation",
     "opensearch_collection_prefix",
     "bucket_name_prefix",

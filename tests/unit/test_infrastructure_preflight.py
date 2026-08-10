@@ -54,6 +54,7 @@ redis_node_type = "cache.t4g.micro"
 rds_deletion_protection = true
 rds_skip_final_snapshot = false
 log_retention_days = 30
+rds_cpu_alarm_threshold_percent = 90
 enable_opensearch_foundation = false
 opensearch_collection_prefix = "ask-david"
 bucket_name_prefix = "ask-david-example"
@@ -89,6 +90,20 @@ def test_preflight_rejects_missing_cost_attribution(tmp_path: Path) -> None:
     errors, _ = validate_infrastructure_preflight(tmp_path)
 
     assert "development additional_tags are missing: CostCenter" in errors
+
+
+def test_preflight_rejects_missing_rds_cpu_alarm_threshold(tmp_path: Path) -> None:
+    """Connected planning cannot silently omit the approved alarm threshold."""
+    write_preflight_fixture(tmp_path)
+    variables = tmp_path / "infrastructure/environments/development/terraform.tfvars"
+    variables.write_text(
+        variables.read_text(encoding="utf-8").replace("rds_cpu_alarm_threshold_percent = 90\n", ""),
+        encoding="utf-8",
+    )
+
+    errors, _ = validate_infrastructure_preflight(tmp_path)
+
+    assert "development terraform.tfvars is missing rds_cpu_alarm_threshold_percent" in errors
 
 
 def test_preflight_rejects_state_bucket_mismatch_without_rendering_values(tmp_path: Path) -> None:

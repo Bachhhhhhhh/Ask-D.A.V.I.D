@@ -139,6 +139,16 @@ variable "log_retention_days" {
     error_message = "log_retention_days must be a CloudWatch-supported retention value."
   }
 }
+variable "rds_cpu_alarm_threshold_percent" {
+  type = number
+  validation {
+    condition = (
+      var.rds_cpu_alarm_threshold_percent > 0 &&
+      var.rds_cpu_alarm_threshold_percent <= 100
+    )
+    error_message = "rds_cpu_alarm_threshold_percent must be greater than 0 and no greater than 100."
+  }
+}
 variable "enable_opensearch_foundation" { type = bool }
 variable "opensearch_collection_prefix" {
   type = string

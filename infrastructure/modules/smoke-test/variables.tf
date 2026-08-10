@@ -1,0 +1,10 @@
+variable "name_prefix" { type = string }
+variable "account_id" { type = string }
+variable "region" { type = string }
+variable "runtime_log_group_arn" { type = string }
+variable "rds_endpoint" { type = string }
+variable "rds_master_secret_arn" { type = string }
+variable "redis_endpoint" { type = string }
+variable "raw_bucket_name" { type = string }
+variable "curated_bucket_name" { type = string }
+variable "tags" { type = map(string) }

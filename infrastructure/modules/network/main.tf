@@ -88,25 +88,25 @@ resource "aws_security_group" "workload" {
     security_groups = [aws_security_group.alb.id]
   }
 }
+
+# This group is exclusively for the one-off Goal 3B validation tasks. Future
+# workloads and agents must not use it.
+resource "aws_security_group" "smoke" {
+  name_prefix = "${var.name_prefix}-smoke-"
+  vpc_id      = aws_vpc.this.id
+  tags = merge(var.tags, {
+    Component = "synthetic-smoke-test"
+    Purpose   = "goal-3b-private-validation"
+  })
+}
+
 resource "aws_security_group" "rds" {
   name_prefix = "${var.name_prefix}-rds-"
   vpc_id      = aws_vpc.this.id
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.workload.id]
-  }
 }
 resource "aws_security_group" "redis" {
   name_prefix = "${var.name_prefix}-redis-"
   vpc_id      = aws_vpc.this.id
-  ingress {
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [aws_security_group.workload.id]
-  }
 }
 resource "aws_security_group" "aoss_endpoint" {
   name_prefix = "${var.name_prefix}-aoss-"
@@ -115,13 +115,112 @@ resource "aws_security_group" "aoss_endpoint" {
 resource "aws_security_group" "aws_endpoints" {
   name_prefix = "${var.name_prefix}-aws-endpoints-"
   vpc_id      = aws_vpc.this.id
-  ingress {
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.workload.id]
-  }
 }
+
+# Keep the validation group separate from the future workload group. Every
+# ingress rule for RDS, Redis, and AWS endpoints is standalone: mixing inline
+# and standalone rules causes the provider to remove valid smoke access.
+# The dedicated, one-off synthetic smoke tasks need TCP/443 through the
+# existing NAT fallback because Fargate resolved the digest-pinned ECR
+# pull-through image endpoint publicly despite PrivateLink being enabled. Tasks
+# have no public IP and this group must never be reused.
+#trivy:ignore:AVD-AWS-0104
+resource "aws_vpc_security_group_egress_rule" "smoke_https" {
+  security_group_id = aws_security_group.smoke.id
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+  description       = "Temporary NAT fallback for synthetic smoke images only"
+}
+
+resource "aws_vpc_security_group_egress_rule" "smoke_rds" {
+  security_group_id            = aws_security_group.smoke.id
+  ip_protocol                  = "tcp"
+  from_port                    = 5432
+  to_port                      = 5432
+  referenced_security_group_id = aws_security_group.rds.id
+  description                  = "Static PostgreSQL smoke check only"
+}
+
+resource "aws_vpc_security_group_egress_rule" "smoke_redis" {
+  security_group_id            = aws_security_group.smoke.id
+  ip_protocol                  = "tcp"
+  from_port                    = 6379
+  to_port                      = 6379
+  referenced_security_group_id = aws_security_group.redis.id
+  description                  = "Static Redis TLS smoke check only"
+}
+
+resource "aws_vpc_security_group_egress_rule" "smoke_dns_udp" {
+  security_group_id = aws_security_group.smoke.id
+  ip_protocol       = "udp"
+  from_port         = 53
+  to_port           = 53
+  cidr_ipv4         = "${cidrhost(var.vpc_cidr, 2)}/32"
+  description       = "VPC resolver for private endpoint DNS"
+}
+
+resource "aws_vpc_security_group_egress_rule" "smoke_dns_tcp" {
+  security_group_id = aws_security_group.smoke.id
+  ip_protocol       = "tcp"
+  from_port         = 53
+  to_port           = 53
+  cidr_ipv4         = "${cidrhost(var.vpc_cidr, 2)}/32"
+  description       = "VPC resolver fallback for private endpoint DNS"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "rds_smoke" {
+  security_group_id            = aws_security_group.rds.id
+  ip_protocol                  = "tcp"
+  from_port                    = 5432
+  to_port                      = 5432
+  referenced_security_group_id = aws_security_group.smoke.id
+  description                  = "Static PostgreSQL smoke check only"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "rds_workload" {
+  security_group_id            = aws_security_group.rds.id
+  ip_protocol                  = "tcp"
+  from_port                    = 5432
+  to_port                      = 5432
+  referenced_security_group_id = aws_security_group.workload.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_smoke" {
+  security_group_id            = aws_security_group.redis.id
+  ip_protocol                  = "tcp"
+  from_port                    = 6379
+  to_port                      = 6379
+  referenced_security_group_id = aws_security_group.smoke.id
+  description                  = "Static Redis TLS smoke check only"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_workload" {
+  security_group_id            = aws_security_group.redis.id
+  ip_protocol                  = "tcp"
+  from_port                    = 6379
+  to_port                      = 6379
+  referenced_security_group_id = aws_security_group.workload.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "aws_endpoints_smoke" {
+  security_group_id            = aws_security_group.aws_endpoints.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = aws_security_group.smoke.id
+  description                  = "Static smoke access to ECR, Logs, and Secrets Manager endpoints"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "aws_endpoints_workload" {
+  security_group_id            = aws_security_group.aws_endpoints.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = aws_security_group.workload.id
+}
+
 data "aws_region" "current" {}
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.this.id

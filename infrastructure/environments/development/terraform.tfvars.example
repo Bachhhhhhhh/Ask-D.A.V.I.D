@@ -19,5 +19,6 @@ redis_node_type = "cache.t4g.micro"
 rds_deletion_protection = true
 rds_skip_final_snapshot = false
 log_retention_days = 30
+rds_cpu_alarm_threshold_percent = 90
 enable_opensearch_foundation = false
 opensearch_collection_prefix = "ask-david"
