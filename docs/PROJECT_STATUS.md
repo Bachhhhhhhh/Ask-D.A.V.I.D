@@ -13,7 +13,12 @@ verification.
   Terraform remediation and report are committed at
   `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`.
 - Reconstruction date: `2026-08-05`
-- Last verified commit: `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`
+- Last verified commit: `a778cfdfceaf6c704f98d83752c54c73a7d9208f`
+- Goal 4 evidence commit: `a778cfdfceaf6c704f98d83752c54c73a7d9208f`
+  (`goal-04: record connected lakehouse verification`). It contains the
+  reviewed Goal 4 implementation, durable verification reports, the final
+  zero-drift evidence, and the current bundle-validation evidence; ignored
+  local inputs and credentials are not tracked.
 - Last repository-wide executable verification: `VERIFIED BY PROJECT OWNER`
 - Verification provenance: the project owner confirmed on `2026-08-05` that
   the Goal 2 and Goal 3A acceptance checks passed on the previous development
@@ -200,31 +205,32 @@ verification.
 | Goal 2 — Repository and development foundation | VERIFIED | `f89fa1f5552b774f1c2a5e4472b0b8a7e12efa9a`, `2881e23ece07f790e4fadf477580fb75ab5639b4`, `f5e3e8345ce7e96a751697fed212c90c18775d63`; source snapshot reviewed through `ec025e18666daac5c1979a2aad6f34a141c2351d` | Project-owner attestation dated `2026-08-05`: Goal 2 acceptance checks passed on the previous development machine. Raw test, coverage, local-service, lint, type-check, and security reports were not retained in the repository. |
 | Goal 3A — AWS Terraform implementation and offline validation | VERIFIED | `a70d806da9b7df6d9218537062bf8670c817b662` plus CI fixes `9cc3104`, `fdca7c8`, and `2a9abfe`; the isolated synthetic validation resources and accepted base-alarm remediation are committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`. | On `2026-08-10`, Terraform formatting, bootstrap/development validation, 9 Terraform contract runs, TFLint, Trivy, strict preflight, Ruff, mypy, 15 pytest tests with 96.67% coverage, Bandit, detect-secrets, environment validation, dependency audit, pre-commit file-integrity hooks, and `git diff --check` passed. Terraform/Ruff/mypy/detect-secrets/pytest hooks were validated directly rather than duplicated inside pre-commit. The reviewed source and durable evidence are committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`. |
 | Goal 3B — Connected AWS deployment and smoke testing | VERIFIED | Bootstrap, development, VPC Flow Logs, static smoke-task foundations, dedicated NAT fallback, Redis revision 4, and the base RDS CPU alarm remediation were applied from separately approved saved plans. The reviewed implementation is committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`. Alarm plan SHA-256 `db143549fe551a397afac6b88248b8be74b48b689fa8a685c6868af43816f331` applied as `1 added, 1 changed, 0 destroyed`. | `docs/verification/GOAL-03B-CONNECTED-EXECUTION-2026-08-05.md`, committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`, records all three passing dynamic smoke checks, deterministic connected SG/AOSS unauthorized-path enforcement, VPC Flow Log ingestion, successful alarm apply, read-only CloudWatch/KMS verification, and final post-remediation zero-drift plan SHA-256 `db9ec9f069bf03d724689d1cf2a3347a43dd63c18df81f99463f18bf649d78be` exiting `0` with zero non-no-op resource/output changes. |
-| Goal 4 — Databricks, Unity Catalog, and Iceberg | PARTIALLY VERIFIED — PROJECT ICEBERG-COMPATIBILITY PROFILE | `docs/plans/GOAL-04-DATABRICKS-UNITY-CATALOG-ICEBERG-PLAN.md`; staged Terraform, verified storage credential, development UC foundation, deployed five-job bundle, and the historical workflow/authorization runs listed above. Tables API truth is seven managed Delta UniForm tables with Iceberg-compatible metadata in approved S3. The project owner approved retaining them as the fixed project representation without destructive recreation. | `docs/verification/GOAL-04-NATIVE-ICEBERG-FORMAT-BLOCKER-2026-08-11.md` records the explicit format disclosure and revised profile; `docs/verification/GOAL-04-FINAL-VERIFICATION-2026-08-11.md` records final zero-drift and bundle-validation evidence; `docs/verification/GOAL-04-BUNDLE-SYNC-EXCLUDE-VERIFICATION-2026-08-12.md` proves the sync boundary. Remaining work is the immutable Goal 4 evidence commit and separately reviewed status-only checkpoint commit. Native Iceberg is no longer planned. |
+| Goal 4 — Databricks, Unity Catalog, and Iceberg | VERIFIED — PROJECT ICEBERG-COMPATIBILITY PROFILE | Evidence commit `a778cfdfceaf6c704f98d83752c54c73a7d9208f` contains the reviewed staged Terraform, verified storage credential, development UC foundation, five-job bundle, durable reports, final zero-drift evidence, and current strict bundle-validation evidence. Tables API truth is seven managed Delta UniForm tables with Iceberg-compatible metadata in approved S3; the project owner approved retaining them as the fixed project representation without destructive recreation. Native Iceberg is no longer planned. | `docs/verification/GOAL-04-FINAL-VERIFICATION-2026-08-11.md`, `docs/verification/GOAL-04-NATIVE-ICEBERG-FORMAT-BLOCKER-2026-08-11.md`, and `docs/verification/GOAL-04-BUNDLE-SYNC-EXCLUDE-VERIFICATION-2026-08-12.md`; final Terraform plan SHA-256 `2fe6fd3eeeea72b703d27d10bba2cf5b0fcbdc27933ee2fb2857030ecab0edaa` reported 189 no-op and zero non-no-op actions, and the current bundle aggregate `49730c2fe6ccc38d15bc9511f626e17992d088eb4ced45eb745c22ff80769027` returned `Validation OK!`. |
 
 ## Current next checkpoint
 
 Goal 3 is complete: Goal 3A and Goal 3B are `VERIFIED` against immutable commit
 `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`.
 
-Goal 4 Phase 4-0 through the authorization evidence checkpoint completed, but
-Goal 4 is not yet verified. The authoritative Tables API inventory proves that
-all seven live synthetic tables are managed Delta UniForm with
+Goal 4 is `VERIFIED` against immutable evidence commit
+`a778cfdfceaf6c704f98d83752c54c73a7d9208f` under the approved project
+Iceberg-compatibility profile. The authoritative Tables API inventory proves
+that all seven live synthetic tables are managed Delta UniForm with
 Iceberg-compatible metadata in approved S3. The approved project profile
 retains these identities and does not execute the destructive drop/recreate
-remediation; native Iceberg is no longer planned or required. The revised acceptance
-profile and evidence are documented in
+remediation; native Iceberg is no longer planned or required. The revised
+acceptance profile and evidence are documented in
 `docs/verification/GOAL-04-NATIVE-ICEBERG-FORMAT-BLOCKER-2026-08-11.md`.
 
 The sync.exclude deployment checkpoint is complete and recorded in
 `docs/verification/GOAL-04-BUNDLE-SYNC-EXCLUDE-VERIFICATION-2026-08-12.md`.
 The connected identity/resource inspection, grant remediation, final
-zero-drift plan, and strict bundle validation are complete. No table
-drop/recreate is required. The next checkpoint is an approved Goal 4 evidence
-commit followed by a separately reviewed status-only commit; final evidence
+zero-drift plan, strict bundle validation, and durable evidence commit are
+complete. No table drop/recreate is required. The next roadmap goal remains
+Goal 5, which is not started and requires separate approval; final evidence
 must retain the explicit Delta UniForm/native-Iceberg distinction.
 
-Do not run a connected job without that approval. This status update does not
+Do not begin Goal 5 without separate approval. This status update does not
 authorize SQL/job execution, Terraform plan/apply/destroy, AWS mutation,
 additional compute, Goal 5 work, arbitrary ECS task, or reuse of any stale
 saved plan.
