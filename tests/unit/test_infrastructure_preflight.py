@@ -139,3 +139,57 @@ def test_preflight_rejects_kms_key_from_another_account(tmp_path: Path) -> None:
 
     assert "development backend KMS key must belong to the approved AWS account" in errors
     assert kms_deferred is False
+
+
+def test_preflight_requires_active_goal4_inputs(tmp_path: Path) -> None:
+    """The active Goal 4 stage cannot plan with missing workspace/account contracts."""
+    write_preflight_fixture(tmp_path)
+    variables = tmp_path / "infrastructure/environments/development/terraform.tfvars"
+    variables.write_text(
+        variables.read_text(encoding="utf-8") + 'goal_4_stage = "active"\n',
+        encoding="utf-8",
+    )
+
+    errors, _ = validate_infrastructure_preflight(tmp_path)
+
+    assert (
+        "development terraform.tfvars is missing Goal 4 value databricks_workspace_host" in errors
+    )
+    assert (
+        "development terraform.tfvars is missing Goal 4 value databricks_sql_warehouse_id" in errors
+    )
+
+
+def test_preflight_rejects_active_goal4_without_self_assumption(tmp_path: Path) -> None:
+    """The active stage cannot precede the trust-policy-only bootstrap apply."""
+    write_preflight_fixture(tmp_path)
+    variables = tmp_path / "infrastructure/environments/development/terraform.tfvars"
+    variables.write_text(
+        variables.read_text(encoding="utf-8")
+        + 'goal_4_stage = "active"\n'
+        + "goal_4_storage_role_self_assumption_enabled = false\n",
+        encoding="utf-8",
+    )
+
+    errors, _ = validate_infrastructure_preflight(tmp_path)
+
+    assert (
+        "development Goal 4 active requires "
+        "goal_4_storage_role_self_assumption_enabled = true" in errors
+    )
+
+
+def test_preflight_accepts_active_goal4_self_assumption_gate(tmp_path: Path) -> None:
+    """The enabled gate itself must not produce a preflight error for active."""
+    write_preflight_fixture(tmp_path)
+    variables = tmp_path / "infrastructure/environments/development/terraform.tfvars"
+    variables.write_text(
+        variables.read_text(encoding="utf-8")
+        + 'goal_4_stage = "active"\n'
+        + "goal_4_storage_role_self_assumption_enabled = true\n",
+        encoding="utf-8",
+    )
+
+    errors, _ = validate_infrastructure_preflight(tmp_path)
+
+    assert all("active requires" not in error for error in errors)

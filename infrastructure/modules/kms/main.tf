@@ -5,6 +5,34 @@ locals {
   ]
   rds_cpu_alarm_arn = "arn:aws:cloudwatch:${var.region}:${var.account_id}:alarm:${var.name_prefix}-rds-cpu-high"
 
+  storage_key_policy = var.storage_access_role_arn == null ? null : jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableAccountRootPermissions"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${var.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowUnityCatalogStorageUse"
+        Effect    = "Allow"
+        Principal = { AWS = var.storage_access_role_arn }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:GenerateDataKeyWithoutPlaintext",
+          "kms:ReEncryptFrom",
+          "kms:ReEncryptTo",
+        ]
+        Resource = "*"
+      },
+    ]
+  })
+
   observability_key_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -63,6 +91,7 @@ resource "aws_kms_key" "storage" {
   description             = "${var.name_prefix} S3 encryption"
   enable_key_rotation     = true
   deletion_window_in_days = 30
+  policy                  = local.storage_key_policy
   tags                    = var.tags
 }
 resource "aws_kms_alias" "storage" {

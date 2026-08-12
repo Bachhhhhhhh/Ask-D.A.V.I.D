@@ -34,7 +34,12 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["packages/platform-foundation/src", "scripts/dev.py"]
+files = [
+  "packages/platform-foundation/src",
+  "scripts/dev.py",
+  "scripts/validate_goal4.py",
+  "scripts/verify_goal4_table_inventory.py",
+]
 strict = true
 warn_unused_configs = true
 plugins = ["pydantic.mypy"]

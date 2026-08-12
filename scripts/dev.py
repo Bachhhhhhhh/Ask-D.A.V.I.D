@@ -78,7 +78,13 @@ def check() -> None:
     lint()
     typecheck()
     test()
+    databricks_static()
     security()
+
+
+def databricks_static() -> None:
+    """Validate Goal 4 source contracts without authentication or cloud access."""
+    run(["uv", "run", "python", "scripts/validate_goal4.py"])
 
 
 TERRAFORM_DEVELOPMENT = "infrastructure/environments/development"
@@ -118,6 +124,16 @@ DEVELOPMENT_REQUIRED_VARIABLES = {
     "enable_opensearch_foundation",
     "opensearch_collection_prefix",
     "bucket_name_prefix",
+}
+GOAL4_BOOTSTRAP_REQUIRED_VARIABLES = {
+    "databricks_governance_admin_user_name",
+    "databricks_metastore_id",
+    "databricks_workspace_host",
+    "databricks_workspace_id",
+}
+GOAL4_ACTIVE_REQUIRED_VARIABLES = GOAL4_BOOTSTRAP_REQUIRED_VARIABLES | {
+    "databricks_account_id",
+    "databricks_sql_warehouse_id",
 }
 BACKEND_REQUIRED_VALUES = {
     "bucket",
@@ -220,6 +236,35 @@ def validate_infrastructure_preflight(repository_root: Path) -> tuple[list[str],
     ):
         if any(marker in text.upper() for marker in PLACEHOLDER_MARKERS):
             errors.append(f"{label} still contains placeholder values")
+
+    goal_4_stage = _unquote(development.get("goal_4_stage", '"disabled"'))
+    goal_4_self_assumption = _unquote(
+        development.get("goal_4_storage_role_self_assumption_enabled", "false")
+    ).lower()
+    if goal_4_stage not in {"disabled", "bootstrap", "active"}:
+        errors.append("development goal_4_stage must be disabled, bootstrap, or active")
+    else:
+        goal_4_required = (
+            GOAL4_ACTIVE_REQUIRED_VARIABLES
+            if goal_4_stage == "active"
+            else GOAL4_BOOTSTRAP_REQUIRED_VARIABLES
+            if goal_4_stage == "bootstrap"
+            else set()
+        )
+        for name in _missing_assignments(development, goal_4_required):
+            errors.append(f"development terraform.tfvars is missing Goal 4 value {name}")
+        for name in goal_4_required.intersection(development):
+            if _is_placeholder(development[name]):
+                errors.append(f"development terraform.tfvars has unresolved Goal 4 value {name}")
+        if goal_4_self_assumption not in {"true", "false"}:
+            errors.append(
+                "development goal_4_storage_role_self_assumption_enabled must be true or false"
+            )
+        elif goal_4_stage == "active" and goal_4_self_assumption != "true":
+            errors.append(
+                "development Goal 4 active requires "
+                "goal_4_storage_role_self_assumption_enabled = true"
+            )
 
     if not _missing_assignments(backend, BACKEND_REQUIRED_VALUES):
         for name in BACKEND_REQUIRED_VALUES.difference({"kms_key_id"}):
@@ -407,6 +452,7 @@ COMMANDS = {
     "infra-lint": infra_lint,
     "infra-security": infra_security,
     "infra-plan": infra_plan,
+    "databricks-static": databricks_static,
     "clean": clean,
 }
 

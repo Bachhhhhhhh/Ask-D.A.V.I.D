@@ -1,4 +1,10 @@
 mock_provider "aws" {}
+mock_provider "databricks" {
+  alias = "workspace"
+}
+mock_provider "databricks" {
+  alias = "account"
+}
 
 run "development_foundation_is_plannable" {
   command = plan
@@ -27,6 +33,7 @@ run "development_foundation_is_plannable" {
     enable_opensearch_foundation    = false
     opensearch_collection_prefix    = "ask-david"
     bucket_name_prefix              = "ask-david-contract"
+    goal_4_stage                    = "disabled"
   }
 
   assert {
@@ -62,6 +69,7 @@ run "development_defines_static_synthetic_smoke_tasks" {
     enable_opensearch_foundation    = false
     opensearch_collection_prefix    = "ask-david"
     bucket_name_prefix              = "ask-david-contract"
+    goal_4_stage                    = "disabled"
   }
 
   assert {

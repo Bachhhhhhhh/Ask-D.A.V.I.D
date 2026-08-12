@@ -11,11 +11,12 @@ module "network" {
   tags                     = local.tags
 }
 module "kms" {
-  source      = "../../modules/kms"
-  name_prefix = local.name_prefix
-  account_id  = var.aws_account_id
-  region      = var.aws_region
-  tags        = local.tags
+  source                  = "../../modules/kms"
+  name_prefix             = local.name_prefix
+  account_id              = var.aws_account_id
+  region                  = var.aws_region
+  storage_access_role_arn = local.goal_4_enabled ? module.databricks_aws_storage.role_arn : null
+  tags                    = local.tags
 }
 module "storage" {
   source             = "../../modules/storage"

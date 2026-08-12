@@ -1,0 +1,10 @@
+variable "enabled" { type = bool }
+variable "workspace_id" { type = number }
+variable "catalog_name" { type = string }
+variable "catalog_storage_root" { type = string }
+variable "schema_storage_roots" { type = map(string) }
+variable "external_location_urls" { type = map(string) }
+variable "storage_credential_name" { type = string }
+variable "governance_admin_group_name" { type = string }
+variable "data_engineer_group_name" { type = string }
+variable "business_reader_group_name" { type = string }

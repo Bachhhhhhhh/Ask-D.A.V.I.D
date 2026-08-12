@@ -112,3 +112,35 @@ All local environment inputs and backend values must be complete except for
 the state KMS ARN, which is intentionally supplied from the approved bootstrap
 output before connected development initialization. Bootstrap and development
 state use distinct S3 object keys.
+
+## Goal 4 declarative extension
+
+Goal 4 extends the verified development root without redesigning Goal 3. The
+safe source defaults are `goal_4_stage = "disabled"` and
+`goal_4_storage_role_self_assumption_enabled = false`. The separately reviewed
+`bootstrap` stage declares only one Unity Catalog storage credential, its AWS
+IAM role and prefix-scoped inline policy, seven zero-byte SSE-KMS S3 root
+markers, and the in-place storage KMS key policy. The markers make otherwise
+empty approved prefixes addressable to Databricks `PATH_EXISTS` validation;
+they contain no data records and are not Iceberg tables. IAM creation is
+deliberately two-step: the initial role trust contains
+only the Databricks Unity Catalog principal and exact external ID; a later
+saved plan adds the role's own ARN in-place after the role exists. The `active`
+stage is blocked unless that self-assumption flag is true, changes credential
+validation to strict mode, and adds only the approved development identities,
+bindings, external locations, catalog, schemas, and least-privilege grants.
+
+All S3 names, ARNs, managed roots, and the KMS key are derived from the Goal 3
+Terraform graph. The new role can access only the seven approved logical
+managed roots: one catalog root plus the six schema roots. Those roots use the
+Raw, Curated, Business, Documents, Audit, and Artifacts buckets; the Logs
+bucket is deliberately excluded. List and object permissions are scoped to
+the exact `unity-catalog/development/...` roots and the existing storage KMS
+key. The role has no Glue, RDS, Redis, ECS, OpenSearch, Secrets Manager,
+state-bucket, or non-storage permission. Users and Databricks service
+principals receive no direct AWS identity or S3 grant.
+
+The existing metastore and Serverless SQL Warehouse are data references and
+checks only. There is no metastore-assignment, warehouse, cluster, or Glue
+resource. See `docs/runbooks/GOAL-04-DATABRICKS-LAKEHOUSE.md`; no connected
+Goal 4 plan or mutation is authorized by this source implementation.

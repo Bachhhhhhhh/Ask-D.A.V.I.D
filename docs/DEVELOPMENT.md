@@ -15,6 +15,7 @@ On Windows, use PowerShell:
 .\scripts\dev.ps1 typecheck
 .\scripts\dev.ps1 test
 .\scripts\dev.ps1 check
+.\scripts\dev.ps1 databricks-static
 .\scripts\dev.ps1 local-up
 .\scripts\dev.ps1 local-down
 .\scripts\dev.ps1 clean
@@ -44,9 +45,16 @@ markers. It creates a coverage report and requires 90% branch coverage for the
 foundation package. Future local-service tests must use the `integration`
 marker; tests that need cloud credentials must use the `cloud` marker.
 
-`check` runs format verification, linting, strict typing, tests, and local
-security checks. `pre-commit run --all-files` executes the same style and
+`check` runs format verification, linting, strict typing, tests, Goal 4 static
+contracts, and local security checks. `pre-commit run --all-files` executes the same style and
 secret-protection hooks used before review.
+
+`databricks-static` is credential-free. It checks the approved catalog/schema
+hierarchy, staged Terraform gate, existing-metastore and warehouse references,
+bundle job/file contract, seven explicit `USING ICEBERG` table definitions,
+absence of `LOCATION` and Delta substitutions, negative-test definitions, and
+common credential assignments. It does not authenticate, validate against a
+workspace, deploy a bundle, start a warehouse, or execute SQL.
 
 ## Local limitations
 

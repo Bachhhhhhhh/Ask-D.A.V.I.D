@@ -1,0 +1,46 @@
+bundle:
+  name: ask-david-goal-04-lakehouse
+
+include:
+  - bundles/goal_04_lakehouse/resources.yml
+
+variables:
+  warehouse_id:
+    description: Existing approved Serverless SQL Warehouse ID.
+  workflow_service_principal_application_id:
+    description: Terraform-created workflow service-principal application ID.
+  denied_service_principal_application_id:
+    description: Terraform-created denied-test service-principal application ID.
+  governance_admin_user_name:
+    description: Existing development governance administrator for read-only lineage inspection.
+  denied_s3_probe_url:
+    description: Terraform-derived approved managed-storage prefix for the negative path test.
+  catalog_name:
+    description: Terraform-created development catalog.
+    default: ask_david_development
+
+run_as:
+  service_principal_name: ${var.workflow_service_principal_application_id}
+
+permissions:
+  - user_name: ${var.governance_admin_user_name}
+    level: CAN_MANAGE
+  - group_name: ask-david-development-governance-admins
+    level: CAN_MANAGE
+  - group_name: ask-david-development-data-engineers
+    level: CAN_RUN
+  - service_principal_name: ${var.denied_service_principal_application_id}
+    level: CAN_VIEW
+
+sync:
+  include:
+    - sql/goal_04/*.sql
+  exclude:
+    - sql/goal_04/remediation/**
+
+targets:
+  development:
+    default: true
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${var.governance_admin_user_name}/.bundle/${bundle.name}/${bundle.target}

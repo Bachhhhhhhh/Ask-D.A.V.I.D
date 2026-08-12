@@ -1,0 +1,163 @@
+resources:
+  jobs:
+    synthetic_managed_iceberg_pipeline:
+      name: ask-david-development-synthetic-managed-iceberg
+      description: Neutral synthetic Raw to Curated to Business managed-Iceberg validation.
+      max_concurrent_runs: 1
+      queue:
+        enabled: false
+      tags:
+        data_classification: synthetic-only
+        environment: development
+        goal: goal-04
+      tasks:
+        - task_key: create_managed_iceberg_tables
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/01_create_managed_iceberg_tables.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: load_raw_and_reference_data
+          depends_on:
+            - task_key: assert_native_iceberg_sql_metadata
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/02_load_raw_and_reference_data.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: assert_native_iceberg_sql_metadata
+          depends_on:
+            - task_key: create_managed_iceberg_tables
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/13_assert_native_iceberg_metadata.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: create_second_raw_snapshot
+          depends_on:
+            - task_key: load_raw_and_reference_data
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/03_create_second_raw_snapshot.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: build_curated
+          depends_on:
+            - task_key: create_second_raw_snapshot
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/04_build_curated.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: build_business
+          depends_on:
+            - task_key: build_curated
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/05_build_business.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: record_quality_results
+          depends_on:
+            - task_key: build_business
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/06_record_quality_results.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: record_execution_audit
+          depends_on:
+            - task_key: record_quality_results
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/07_record_execution_audit.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: verify_pipeline_results
+          depends_on:
+            - task_key: record_execution_audit
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/08_verify_pipeline_results.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+
+    managed_iceberg_history_verification:
+      name: ask-david-development-managed-iceberg-history-verification
+      description: Read-only Iceberg snapshot and table-type verification after the synthetic run.
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: inspect_managed_iceberg_history
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/09_verify_iceberg_history.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+
+    lineage_verification:
+      name: ask-david-development-lineage-verification
+      description: Read-only system-table lineage evidence for the synthetic workflow.
+      max_concurrent_runs: 1
+      run_as:
+        user_name: ${var.governance_admin_user_name}
+      tasks:
+        - task_key: inspect_table_lineage
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/10_verify_lineage.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+
+    denied_table_access_verification:
+      name: ask-david-development-denied-table-access
+      description: Expected-failure query proving the denied principal has no protected-table access.
+      max_concurrent_runs: 1
+      run_as:
+        service_principal_name: ${var.denied_service_principal_application_id}
+      tasks:
+        - task_key: denied_table_query_must_fail
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/11_denied_table_access.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+
+    denied_direct_path_verification:
+      name: ask-david-development-denied-direct-path-access
+      description: Expected-failure query proving an S3 path cannot bypass Unity Catalog.
+      max_concurrent_runs: 1
+      run_as:
+        service_principal_name: ${var.denied_service_principal_application_id}
+      tasks:
+        - task_key: denied_path_query_must_fail
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_04/12_denied_direct_path_access.sql
+              source: WORKSPACE
+            parameters:
+              denied_s3_probe_url: ${var.denied_s3_probe_url}
+            warehouse_id: ${var.warehouse_id}
