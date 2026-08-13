@@ -1,6 +1,6 @@
 # Goal 5 CDC output-assertion bundle deployment
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: one approved redeployment of the source set that passed the fresh strict
 bundle validation. No workflow, job/SQL execution, table/data mutation,
 Terraform operation, or AWS operation was performed as part of this checkpoint.

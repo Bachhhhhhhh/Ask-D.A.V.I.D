@@ -1,6 +1,6 @@
 # Goal 5 numeric CDC assertion workflow success
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: one approved workflow run after deployment of the numeric CDC output
 assertion, with immediate read-only inspection. No implicit retry, redeploy,
 second workflow, Terraform operation, AWS operation, or ad-hoc SQL execution

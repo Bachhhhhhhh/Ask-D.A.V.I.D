@@ -90,4 +90,3 @@ foundation.
 Phase 5-0 is complete. Stop before implementation until the minimal Goal 5
 design is reviewed. No connected deployment, SQL/job run, Terraform operation,
 AWS mutation, or additional compute creation is authorized by this report.
-

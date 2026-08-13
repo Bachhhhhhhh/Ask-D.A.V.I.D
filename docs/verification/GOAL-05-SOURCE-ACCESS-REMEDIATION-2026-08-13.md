@@ -1,6 +1,6 @@
 # Goal 5 source-access remediation
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: offline analysis and declarative remediation after the first approved
 synthetic-ingestion run. No Terraform apply, AWS mutation, Databricks
 mutation, bundle operation, SQL run, or job retry occurred in this checkpoint.

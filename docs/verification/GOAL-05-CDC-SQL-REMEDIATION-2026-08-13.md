@@ -1,6 +1,6 @@
 # Goal 5 CDC SQL remediation
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: offline source, validator, regression-test, and documentation change
 after workflow run `616649104578361`. No connected bundle validation/deploy,
 SQL/job run, Terraform operation, AWS operation, retry, or Databricks mutation

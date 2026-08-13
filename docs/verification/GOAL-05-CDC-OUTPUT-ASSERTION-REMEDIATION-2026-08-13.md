@@ -1,6 +1,6 @@
 # Goal 5 CDC output assertion remediation
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: approved offline-only correction after workflow run `149148676670509`.
 No connected bundle validation/deployment, job/SQL execution, table/data
 mutation, Terraform operation, AWS operation, or Databricks operation occurred

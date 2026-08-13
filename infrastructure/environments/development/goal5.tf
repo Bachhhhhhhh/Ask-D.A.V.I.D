@@ -9,7 +9,7 @@ resource "aws_s3_object" "goal5_structured_source" {
   content_type = "text/csv"
 
   server_side_encryption = "aws:kms"
-  kms_key_id              = module.kms.storage_key_arn
+  kms_key_id             = module.kms.storage_key_arn
 
   tags = merge(local.tags, {
     Goal               = "goal-05"
@@ -27,7 +27,7 @@ resource "aws_s3_object" "goal5_document_source" {
   content_type = "text/markdown"
 
   server_side_encryption = "aws:kms"
-  kms_key_id              = module.kms.storage_key_arn
+  kms_key_id             = module.kms.storage_key_arn
 
   tags = merge(local.tags, {
     Goal               = "goal-05"
@@ -45,7 +45,7 @@ resource "aws_s3_object" "goal5_cdc_source" {
   content_type = "application/x-ndjson"
 
   server_side_encryption = "aws:kms"
-  kms_key_id              = module.kms.storage_key_arn
+  kms_key_id             = module.kms.storage_key_arn
 
   tags = merge(local.tags, {
     Goal               = "goal-05"

@@ -166,7 +166,7 @@ variable "bucket_name_prefix" {
 }
 
 variable "goal_5_source_objects_enabled" {
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
   description = "Permit the separately approved Goal 5 Terraform source-object checkpoint."
 }

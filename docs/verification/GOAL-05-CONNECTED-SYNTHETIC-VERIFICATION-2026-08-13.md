@@ -1,6 +1,6 @@
 # Goal 5 connected synthetic verification
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: connected synthetic execution evidence and subsequent read-only
 Databricks/AWS verification. This report does not replace the required final
 Terraform no-drift evidence or the final acceptance report.

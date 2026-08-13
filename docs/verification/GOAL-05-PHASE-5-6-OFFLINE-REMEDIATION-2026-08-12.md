@@ -1,6 +1,6 @@
 # Goal 5 Phase 5-6 offline remediation for strict bundle warning
 
-Date: 2026-08-12  
+Date: 2026-08-12
 Scope: offline-only correction after the one approved strict validation
 reported an unmatched `sync.exclude` warning.
 

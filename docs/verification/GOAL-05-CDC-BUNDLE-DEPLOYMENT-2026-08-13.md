@@ -1,6 +1,6 @@
 # Goal 5 corrected CDC bundle deployment
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: one approved deployment of the exact source set that passed strict
 connected validation. No workflow, job, SQL, table/data mutation, compute
 creation, Terraform operation, or AWS operation was performed as part of this

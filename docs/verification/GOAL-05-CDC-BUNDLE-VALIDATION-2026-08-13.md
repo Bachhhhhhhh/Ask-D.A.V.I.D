@@ -1,6 +1,6 @@
 # Goal 5 corrected CDC bundle validation
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: one approved strict connected Databricks bundle validation after the
 offline CDC SQL remediation. No deployment, job/SQL execution, table/data
 mutation, compute creation, Terraform operation, or AWS operation was

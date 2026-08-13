@@ -1,6 +1,6 @@
 # Goal 5 CDC output-assertion bundle validation
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: one approved strict connected bundle validation after the offline CDC
 output-assertion remediation. No deployment, job/SQL execution, table/data
 mutation, compute creation, Terraform operation, or AWS operation was

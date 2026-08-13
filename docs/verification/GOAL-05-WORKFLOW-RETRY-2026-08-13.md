@@ -1,6 +1,6 @@
 # Goal 5 corrected workflow retry
 
-Date: 2026-08-13  
+Date: 2026-08-13
 Scope: one approved run of the corrected Goal 5 bundle job, followed by
 read-only run/task inspection. No implicit retry, redeploy, second workflow,
 Terraform operation, AWS operation, or ad-hoc SQL execution was performed.
