@@ -7,5 +7,15 @@ output "schema_names" {
 }
 
 output "external_location_names" {
-  value = sort([for location in databricks_external_location.this : location.name])
+  value = sort([
+    for key, location in databricks_external_location.this : location.name
+    if contains(keys(var.managed_external_location_urls), key)
+  ])
+}
+
+output "source_external_location_names" {
+  value = sort([
+    for key, location in databricks_external_location.this : location.name
+    if contains(keys(var.source_external_location_urls), key)
+  ])
 }

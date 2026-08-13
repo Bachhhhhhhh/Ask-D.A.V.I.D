@@ -22,6 +22,18 @@ output "goal_4_storage_credential_name" { value = module.databricks_storage_cred
 output "goal_4_catalog_name" { value = module.databricks_lakehouse.catalog_name }
 output "goal_4_schema_names" { value = module.databricks_lakehouse.schema_names }
 output "goal_4_external_location_names" { value = module.databricks_lakehouse.external_location_names }
+output "goal_5_source_external_location_names" {
+  value = module.databricks_lakehouse.source_external_location_names
+}
+output "goal5_structured_source_uri" {
+  value = "s3://${module.storage.bucket_names["raw"]}/unity-catalog/development/goal5/structured/synthetic_events.csv"
+}
+output "goal5_document_source_uri" {
+  value = "s3://${module.storage.bucket_names["documents"]}/unity-catalog/development/goal5/documents/neutral_technical_guide.md"
+}
+output "goal5_cdc_source_uri" {
+  value = "s3://${module.storage.bucket_names["raw"]}/unity-catalog/development/goal5/cdc/synthetic_changes.jsonl"
+}
 output "goal_4_workflow_service_principal_application_id" {
   value = module.databricks_identities.workflow_service_principal_application_id
 }

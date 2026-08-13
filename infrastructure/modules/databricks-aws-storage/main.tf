@@ -59,6 +59,25 @@ data "aws_iam_policy_document" "storage" {
     }
   }
 
+  dynamic "statement" {
+    for_each = length(var.source_read_prefixes) == 0 ? [] : [1]
+
+    content {
+      sid       = "ListApprovedIngestionSourcePrefixes"
+      effect    = "Allow"
+      actions   = ["s3:ListBucket"]
+      resources = var.bucket_arns
+
+      condition {
+        test     = "StringLike"
+        variable = "s3:prefix"
+        values = flatten([
+          for prefix in var.source_read_prefixes : [prefix, "${prefix}/*"]
+        ])
+      }
+    }
+  }
+
   statement {
     sid    = "ManageApprovedIcebergObjects"
     effect = "Allow"
@@ -71,6 +90,17 @@ data "aws_iam_policy_document" "storage" {
       "s3:PutObject",
     ]
     resources = var.managed_object_arns
+  }
+
+  dynamic "statement" {
+    for_each = length(var.source_read_object_arns) == 0 ? [] : [1]
+
+    content {
+      sid       = "ReadApprovedIngestionSourceObjects"
+      effect    = "Allow"
+      actions   = ["s3:GetObject", "s3:GetObjectVersion"]
+      resources = var.source_read_object_arns
+    }
   }
 
   statement {

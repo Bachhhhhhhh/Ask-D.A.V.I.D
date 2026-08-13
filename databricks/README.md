@@ -1,10 +1,12 @@
-# Goal 4 governed lakehouse assets
+# Governed Databricks lakehouse assets
 
-This directory contains only the declarative development assets for Goal 4.
-Unity Catalog is the governance authority, and Unity Catalog managed Apache
-Iceberg tables store their data and metadata in approved Goal 3 S3 prefixes.
-The implementation does not create a metastore, SQL warehouse, classic
-cluster, Glue catalog, ingestion framework, agent, or real Green SM dataset.
+This directory contains declarative development assets for the verified Goal 4
+foundation and the synthetic-only Goal 5 MVP. Unity Catalog is the governance
+authority and S3 remains the durable storage layer. Goal 4's existing tables
+are managed Delta UniForm with Iceberg-compatible metadata according to the
+authoritative Tables API; they are not described as native Iceberg. Goal 5
+accepts either native managed `ICEBERG` or managed `DELTA_UNIFORM_ICEBERG` and
+records the actual observed format.
 
 ## Layout
 
@@ -18,9 +20,14 @@ cluster, Glue catalog, ingestion framework, agent, or real Green SM dataset.
   seven managed Iceberg tables. Final acceptance additionally requires the raw
   Tables API inventory verifier because Delta UniForm can expose compatible
   Iceberg metadata while remaining `data_source_format = DELTA`.
-- `sql/goal_04/remediation/` contains an unbundled, approval-only script scoped
-  to the seven neutral synthetic tables. It must never be deployed or run as a
-  normal workflow task.
+- `sql/goal_04/remediation/` contains only a non-executable exclusion marker.
+  Executable remediation SQL is forbidden there; the explicit bundle exclude
+  must remain so future approval-only remediation cannot be synchronized.
+- `bundles/goal_05_ingestion/resources.yml` declares the reduced synthetic
+  structured/document/CDC ingestion workflow. It reuses the existing
+  Serverless SQL Warehouse and does not create compute.
+- `sql/goal_05/` contains only neutral fixture ingestion, governed managed
+  tables, quality/provenance assertions, and read-only idempotency checks.
 
 The bundle always references the existing approved Serverless SQL Warehouse.
 It contains no cluster or warehouse resource. Terraform supplies the
@@ -61,7 +68,7 @@ connected `databricks bundle validate`, bundle deployment, authorized SQL run,
 and each negative run require their own approval boundaries documented in
 `docs/runbooks/GOAL-04-DATABRICKS-LAKEHOUSE.md`.
 
-Validate a sanitized raw Tables API inventory offline with:
+Validate a sanitized Goal 4 native-Iceberg inventory offline with:
 
 ```bash
 python scripts/verify_goal4_table_inventory.py /path/to/sanitized-table-inventory.json
@@ -70,3 +77,12 @@ python scripts/verify_goal4_table_inventory.py /path/to/sanitized-table-inventor
 This verifier performs no cloud call. It fails closed unless the exact seven
 project tables are Unity Catalog `MANAGED` native `ICEBERG` tables with no
 Delta properties.
+
+Validate a sanitized Goal 5 inventory against the accepted format policy with:
+
+```bash
+python scripts/verify_goal5_table_inventory.py /path/to/sanitized-goal5-inventory.json
+```
+
+This verifier accepts native `ICEBERG` or managed `DELTA` with explicit
+UniForm Iceberg properties and an Iceberg metadata path. Plain `DELTA` fails.

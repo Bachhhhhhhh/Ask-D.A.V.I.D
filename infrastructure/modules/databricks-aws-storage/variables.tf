@@ -4,6 +4,16 @@ variable "role_name" { type = string }
 variable "bucket_arns" { type = set(string) }
 variable "managed_prefixes" { type = set(string) }
 variable "managed_object_arns" { type = set(string) }
+variable "source_read_prefixes" {
+  description = "Approved read-only source prefixes used by governed ingestion."
+  type        = set(string)
+  default     = []
+}
+variable "source_read_object_arns" {
+  description = "Approved read-only source object ARNs used by governed ingestion."
+  type        = set(string)
+  default     = []
+}
 variable "managed_root_markers" {
   description = "Zero-byte S3 objects that make each approved managed-storage root an addressable path."
   type = map(object({

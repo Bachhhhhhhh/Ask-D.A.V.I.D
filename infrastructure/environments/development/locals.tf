@@ -47,6 +47,25 @@ locals {
     for root_name, bucket_name in local.goal_4_managed_root_bucket_names :
     root_name => "s3://${bucket_name}/${local.goal_4_managed_root_prefixes[root_name]}"
   }
+  # Goal 5 fixtures are deliberately outside the managed-table roots. They
+  # therefore need their own read-only UC external locations instead of
+  # widening access to a schema's managed-storage path.
+  goal_5_source_prefixes = {
+    goal5_raw_sources      = "${local.goal_4_managed_prefix}/goal5"
+    goal5_document_sources = "${local.goal_4_managed_prefix}/goal5/documents"
+  }
+  goal_5_source_bucket_names = {
+    goal5_raw_sources      = module.storage.bucket_names["raw"]
+    goal5_document_sources = module.storage.bucket_names["documents"]
+  }
+  goal_5_source_object_arns = toset([
+    for source_name, bucket_name in local.goal_5_source_bucket_names :
+    "arn:aws:s3:::${bucket_name}/${local.goal_5_source_prefixes[source_name]}/*"
+  ])
+  goal_5_source_external_location_urls = {
+    for source_name, bucket_name in local.goal_5_source_bucket_names :
+    source_name => "s3://${bucket_name}/${local.goal_5_source_prefixes[source_name]}"
+  }
   goal_4_catalog_storage_root = local.goal_4_external_location_urls["catalog"]
   goal_4_schema_storage_roots = {
     for schema_name in keys(local.goal_4_managed_root_prefixes) :

@@ -1,0 +1,10 @@
+[project]
+name = "ask-david-ingestion"
+version = "0.1.0"
+description = "Typed synthetic ingestion contracts and adapters for the Ask D.A.V.I.D. platform."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"

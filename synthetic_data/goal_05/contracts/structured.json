@@ -1,0 +1,23 @@
+{
+  "contract_version": "1.0",
+  "dataset_id": "goal5.synthetic.events",
+  "source_type": "structured_file",
+  "source": "goal5/structured/synthetic_events.csv",
+  "target_catalog": "ask_david_development",
+  "target_schema": "green_sm_raw",
+  "target_table": "goal5_structured_raw_events",
+  "sensitivity_classification": "synthetic_technical",
+  "table_format_policy": "iceberg-or-delta-uniform-iceberg",
+  "quality_rules": [
+    {"name": "required_fields", "columns": ["event_id", "entity_id", "event_time"]},
+    {"name": "unique_primary_key", "columns": ["event_id"]}
+  ],
+  "schema": {
+    "event_id": "string",
+    "entity_id": "string",
+    "event_time": "timestamp",
+    "category": "string",
+    "metric_value": "double"
+  },
+  "primary_key": ["event_id"]
+}

@@ -1,0 +1,80 @@
+resources:
+  jobs:
+    goal5_synthetic_ingestion:
+      name: ask-david-development-goal5-synthetic-ingestion
+      description: Neutral Goal 5 structured, document, and CDC ingestion MVP.
+      max_concurrent_runs: 1
+      queue:
+        enabled: false
+      tags:
+        data_classification: synthetic-only
+        environment: development
+        goal: goal-05
+      tasks:
+        - task_key: create_goal5_tables
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_05/01_create_goal5_tables.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: ingest_structured_csv
+          depends_on:
+            - task_key: create_goal5_tables
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_05/02_ingest_structured_csv.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              structured_source_uri: ${var.goal5_structured_source_uri}
+              structured_contract_version: ${var.goal5_structured_contract_version}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: ingest_document
+          depends_on:
+            - task_key: create_goal5_tables
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_05/03_ingest_document.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              document_source_uri: ${var.goal5_document_source_uri}
+              document_contract_version: ${var.goal5_document_contract_version}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: ingest_cdc
+          depends_on:
+            - task_key: create_goal5_tables
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_05/04_ingest_cdc.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              cdc_source_uri: ${var.goal5_cdc_source_uri}
+              cdc_contract_version: ${var.goal5_cdc_contract_version}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: verify_goal5_outputs
+          depends_on:
+            - task_key: ingest_structured_csv
+            - task_key: ingest_document
+            - task_key: ingest_cdc
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_05/05_verify_goal5_outputs.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              document_source_uri: ${var.goal5_document_source_uri}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: verify_goal5_idempotency
+          depends_on:
+            - task_key: verify_goal5_outputs
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_05/06_verify_goal5_idempotency.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}

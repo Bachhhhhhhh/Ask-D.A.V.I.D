@@ -231,8 +231,46 @@ def validate_goal4_static(repository_root: Path) -> list[str]:
         errors.append("Goal 4 service principals must not create instance pools")
     if "databricks_workspace_binding" not in lakehouse_source:
         errors.append("Goal 4 lakehouse securables must be bound to development")
-    if "READ_FILES" in lakehouse_source or "WRITE_FILES" in lakehouse_source:
-        errors.append("Goal 4 data principals must not receive direct file privileges")
+    if "WRITE_FILES" in lakehouse_source:
+        errors.append("Goal 4/5 source locations must never grant WRITE_FILES")
+    if lakehouse_source.count('privileges = ["READ_FILES"]') != 1:
+        errors.append(
+            "Goal 5 must grant READ_FILES exactly once through its source-location contract"
+        )
+    if (
+        "var.workflow_service_principal_application_id" not in lakehouse_source
+        or "var.source_external_location_urls" not in lakehouse_source
+    ):
+        errors.append(
+            "Goal 5 READ_FILES must be scoped to the workflow principal and source locations"
+        )
+    if "goal_5_source_prefixes" not in local_source or "goal5_raw_sources" not in local_source:
+        errors.append(
+            "Goal 5 must define distinct, narrow source prefixes outside managed table roots"
+        )
+    if "goal5_document_sources" not in local_source:
+        errors.append("Goal 5 must define a separate document-source prefix")
+    source_iam_requirements = (
+        "source_read_prefixes",
+        "source_read_object_arns",
+        "ListApprovedIngestionSourcePrefixes",
+        "ReadApprovedIngestionSourceObjects",
+        '["s3:GetObject", "s3:GetObjectVersion"]',
+    )
+    for requirement in source_iam_requirements:
+        if requirement not in aws_storage_source:
+            errors.append(f"Goal 5 source IAM policy is missing {requirement}")
+    storage_policy_start = aws_storage_source.find('data "aws_iam_policy_document" "storage" {')
+    storage_policy_end = aws_storage_source.find('resource "aws_iam_role_policy" "this" {')
+    storage_policy_source = aws_storage_source[storage_policy_start:storage_policy_end]
+    trust_policy_end = aws_storage_source.find('resource "aws_iam_role" "this" {')
+    trust_policy_source = aws_storage_source[:trust_policy_end]
+    for statement_id in (
+        "ListApprovedIngestionSourcePrefixes",
+        "ReadApprovedIngestionSourceObjects",
+    ):
+        if statement_id not in storage_policy_source or statement_id in trust_policy_source:
+            errors.append("Goal 5 source S3 access must remain in the storage inline policy")
 
     for job_key in REQUIRED_JOB_KEYS:
         if not re.search(rf"^    {re.escape(job_key)}:$", resource_source, flags=re.MULTILINE):
@@ -270,13 +308,11 @@ def validate_goal4_static(repository_root: Path) -> list[str]:
         r"(?ms)^sync:\n(?P<body>.*?)(?=^targets:)",
         bundle_source,
     )
-    expected_sync_block = (
-        "  include:\n    - sql/goal_04/*.sql\n  exclude:\n    - sql/goal_04/remediation/**\n"
-    )
-    normalized_sync_body = (
-        sync_block_match.group("body").strip("\n") + "\n" if sync_block_match is not None else None
-    )
-    if normalized_sync_body != expected_sync_block:
+    sync_body = sync_block_match.group("body") if sync_block_match is not None else ""
+    if (
+        "    - sql/goal_04/*.sql" not in sync_body
+        or "    - sql/goal_04/remediation/**" not in sync_body
+    ):
         errors.append(
             "Goal 4 bundle sync must include only top-level SQL and explicitly exclude "
             "the nested destructive remediation SQL"
@@ -417,6 +453,20 @@ def validate_goal4_static(repository_root: Path) -> list[str]:
         errors.append("Goal 4 managed-table DDL must not specify LOCATION")
 
     remediation_root = sql_root / "remediation"
+    remediation_marker = remediation_root / "README.md"
+    expected_remediation_marker = (
+        "# Goal 4 remediation exclusion marker\n\n"
+        "This directory intentionally contains no executable SQL. The bundle keeps an\n"
+        "explicit `sync.exclude` for this path so a future approval-only remediation\n"
+        "cannot be synchronized accidentally. Do not add executable SQL here without a\n"
+        "new reviewed remediation and connected approval.\n"
+    )
+    if not remediation_marker.is_file():
+        errors.append("Goal 4 remediation exclusion marker must exist")
+    elif remediation_marker.read_text(encoding="utf-8") != expected_remediation_marker:
+        errors.append(
+            "Goal 4 remediation exclusion marker must remain non-executable and unchanged"
+        )
     if remediation_root.exists() and any(remediation_root.rglob("*.sql")):
         errors.append("Goal 4 destructive remediation SQL must not remain in the repository")
 

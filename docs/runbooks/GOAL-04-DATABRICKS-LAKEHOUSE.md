@@ -117,7 +117,10 @@ all reports; no native-format claim may be inferred from `USING ICEBERG`, SQL
 
 The deprecated `remediation/01_drop_delta_uniform_synthetic_tables.sql` was
 removed from the repository, remains unreferenced, and is excluded by the
-bundle. The separately approved deployment of aggregate source SHA-256
+bundle. The excluded directory now contains only a non-executable README
+marker so strict bundle validation can match the explicit exclusion; no
+executable remediation SQL is permitted there. The separately approved
+deployment of aggregate source SHA-256
 `49730c2fe6ccc38d15bc9511f626e17992d088eb4ced45eb745c22ff80769027` proved the
 file is absent from the workspace. Do not execute it under the compatibility
 profile. Before final acceptance, preserve a sanitized raw Tables API record

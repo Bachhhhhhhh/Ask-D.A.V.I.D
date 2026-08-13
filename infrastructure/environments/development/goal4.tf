@@ -36,6 +36,10 @@ module "databricks_aws_storage" {
   bucket_arns           = local.goal_4_bucket_arns
   managed_prefixes      = local.goal_4_managed_prefixes
   managed_object_arns   = local.goal_4_managed_object_arns
+  source_read_prefixes  = toset(values(local.goal_5_source_prefixes))
+  source_read_object_arns = (
+    local.goal_5_source_object_arns
+  )
   managed_root_markers  = local.goal_4_managed_root_markers
   storage_kms_key_arn   = module.kms.storage_key_arn
   external_id           = module.databricks_storage_credential.external_id
@@ -77,11 +81,15 @@ module "databricks_lakehouse" {
   catalog_name                = var.databricks_catalog_name
   catalog_storage_root        = local.goal_4_catalog_storage_root
   schema_storage_roots        = local.goal_4_schema_storage_roots
-  external_location_urls      = local.goal_4_external_location_urls
+  managed_external_location_urls = local.goal_4_external_location_urls
+  source_external_location_urls  = local.goal_5_source_external_location_urls
   storage_credential_name     = module.databricks_storage_credential.name
   governance_admin_group_name = module.databricks_identities.governance_admin_group_name
   data_engineer_group_name    = module.databricks_identities.data_engineer_group_name
   business_reader_group_name  = module.databricks_identities.business_reader_group_name
+  workflow_service_principal_application_id = (
+    module.databricks_identities.workflow_service_principal_application_id
+  )
 
   depends_on = [module.databricks_aws_storage]
 }

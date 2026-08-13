@@ -1,0 +1,20 @@
+{
+  "contract_version": "1.0",
+  "dataset_id": "goal5.synthetic.entity_changes",
+  "source_type": "cdc",
+  "source": "goal5/cdc/synthetic_changes.jsonl",
+  "target_catalog": "ask_david_development",
+  "target_schema": "green_sm_raw",
+  "target_table": "goal5_cdc_history",
+  "sensitivity_classification": "synthetic_technical",
+  "table_format_policy": "iceberg-or-delta-uniform-iceberg",
+  "quality_rules": [
+    {"name": "required_fields", "columns": ["event_id", "entity_id", "operation"]},
+    {"name": "uniqueness", "columns": ["event_id"]}
+  ],
+  "primary_key": ["entity_id"],
+  "operation_field": "operation",
+  "event_id_field": "event_id",
+  "event_time_field": "event_time",
+  "sequence_field": "sequence"
+}

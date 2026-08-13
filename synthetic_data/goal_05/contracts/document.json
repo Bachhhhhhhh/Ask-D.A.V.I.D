@@ -1,0 +1,28 @@
+{
+  "contract_version": "1.0",
+  "dataset_id": "goal5.synthetic.documents",
+  "source_type": "document",
+  "source": "goal5/documents/neutral_technical_guide.md",
+  "target_catalog": "ask_david_development",
+  "target_schema": "green_sm_ai",
+  "target_table": "goal5_document_metadata",
+  "sensitivity_classification": "synthetic_technical",
+  "table_format_policy": "iceberg-or-delta-uniform-iceberg",
+  "quality_rules": [
+    {"name": "required_fields", "columns": ["document_id", "document_version", "source_uri"]},
+    {"name": "uniqueness", "columns": ["document_id", "document_version"]}
+  ],
+  "allowed_content_types": ["text/markdown", "text/plain"],
+  "document_id_strategy": "sha256_dataset_source",
+  "metadata_required": [
+    "document_id",
+    "document_version",
+    "filename",
+    "content_type",
+    "source_uri",
+    "source_system",
+    "ingestion_run_id",
+    "ingested_at",
+    "classification"
+  ]
+}

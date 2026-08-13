@@ -164,3 +164,9 @@ variable "bucket_name_prefix" {
     error_message = "bucket_name_prefix must be a lowercase S3-safe prefix."
   }
 }
+
+variable "goal_5_source_objects_enabled" {
+  type    = bool
+  default = false
+  description = "Permit the separately approved Goal 5 Terraform source-object checkpoint."
+}

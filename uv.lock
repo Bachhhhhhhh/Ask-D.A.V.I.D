@@ -5,6 +5,7 @@ requires-python = "==3.12.*"
 [manifest]
 members = [
     "ask-david-foundation",
+    "ask-david-ingestion",
     "ask-david-workspace",
 ]
 
@@ -27,6 +28,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "pydantic-settings", specifier = ">=2.7.0,<3.0.0" }]
+
+[[package]]
+name = "ask-david-ingestion"
+version = "0.1.0"
+source = { editable = "packages/ingestion-framework" }
 
 [[package]]
 name = "ask-david-workspace"

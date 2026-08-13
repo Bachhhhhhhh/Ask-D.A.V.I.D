@@ -203,4 +203,12 @@ run "goal4_active_declares_approved_hierarchy" {
     ])
     error_message = "Active Goal 4 must expose exactly the seven approved logical managed-storage roots."
   }
+
+  assert {
+    condition = output.goal_5_source_external_location_names == tolist([
+      "ask-david-development-goal5-document-sources",
+      "ask-david-development-goal5-raw-sources",
+    ])
+    error_message = "Goal 5 must expose only the two approved read-only synthetic source locations."
+  }
 }

@@ -18,6 +18,7 @@ GOAL4_SOURCE_PATHS = (
     "infrastructure/modules/kms/main.tf",
     "databricks/databricks.yml",
     "databricks/bundles/goal_04_lakehouse/resources.yml",
+    "databricks/sql/goal_04/remediation/README.md",
     "scripts/verify_goal4_table_inventory.py",
 )
 
@@ -344,6 +345,17 @@ def test_goal4_rejects_destructive_remediation_sql(tmp_path: Path) -> None:
     assert "Goal 4 destructive remediation SQL must not remain in the repository" in errors
 
 
+def test_goal4_requires_non_executable_remediation_marker(tmp_path: Path) -> None:
+    """The explicit sync exclusion must match a durable non-executable marker."""
+    _copy_goal4_fixture(tmp_path)
+    marker = tmp_path / "databricks/sql/goal_04/remediation/README.md"
+    marker.unlink()
+
+    errors = validate_goal4_static(tmp_path)
+
+    assert "Goal 4 remediation exclusion marker must exist" in errors
+
+
 def test_goal4_bundle_does_not_sync_destructive_remediation(tmp_path: Path) -> None:
     """The drop script cannot become an ordinary bundle workspace artifact."""
     _copy_goal4_fixture(tmp_path)
@@ -525,6 +537,42 @@ def test_goal4_rejects_unconditional_storage_role_self_principal(tmp_path: Path)
         "Unity Catalog trust must add the role self-principal only through the "
         "disabled-by-default bootstrap gate" in errors
     )
+
+
+def test_goal5_source_access_requires_workflow_only_read_files(tmp_path: Path) -> None:
+    """The Goal 5 source exception cannot become a broad data-engineer grant."""
+    _copy_goal4_fixture(tmp_path)
+    lakehouse = tmp_path / "infrastructure/modules/databricks-lakehouse/main.tf"
+    lakehouse.write_text(
+        lakehouse.read_text(encoding="utf-8").replace(
+            "principal  = var.workflow_service_principal_application_id\n"
+            '      privileges = ["READ_FILES"]',
+            'principal  = var.data_engineer_group_name\n      privileges = ["READ_FILES"]',
+        ),
+        encoding="utf-8",
+    )
+
+    errors = validate_goal4_static(tmp_path)
+
+    assert (
+        "Goal 5 READ_FILES must be scoped to the workflow principal and source locations" in errors
+    )
+
+
+def test_goal5_source_access_rejects_write_files(tmp_path: Path) -> None:
+    """Source fixtures are immutable to the workflow principal."""
+    _copy_goal4_fixture(tmp_path)
+    lakehouse = tmp_path / "infrastructure/modules/databricks-lakehouse/main.tf"
+    lakehouse.write_text(
+        lakehouse.read_text(encoding="utf-8").replace(
+            'privileges = ["READ_FILES"]', 'privileges = ["READ_FILES", "WRITE_FILES"]'
+        ),
+        encoding="utf-8",
+    )
+
+    errors = validate_goal4_static(tmp_path)
+
+    assert "Goal 4/5 source locations must never grant WRITE_FILES" in errors
 
 
 def test_goal4_requires_active_self_assumption_guard(tmp_path: Path) -> None:

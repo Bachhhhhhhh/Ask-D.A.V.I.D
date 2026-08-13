@@ -1,0 +1,5 @@
+event_id,entity_id,event_time,category,metric_value
+evt-001,entity-001,2026-02-01T00:00:00Z,alpha,10.5
+evt-002,entity-001,2026-02-01T00:05:00Z,beta,11.0
+evt-002,entity-001,2026-02-01T00:05:00Z,beta,11.0
+evt-003,entity-002,2026-02-01T00:10:00Z,gamma,not-a-number

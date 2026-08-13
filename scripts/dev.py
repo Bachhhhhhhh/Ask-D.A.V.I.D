@@ -51,7 +51,7 @@ def lint() -> None:
 
 
 def typecheck() -> None:
-    """Run strict mypy checks over foundation package code."""
+    """Run strict mypy checks over platform and ingestion package code."""
     run(["uv", "run", "mypy"])
 
 
@@ -79,12 +79,18 @@ def check() -> None:
     typecheck()
     test()
     databricks_static()
+    goal5_static()
     security()
 
 
 def databricks_static() -> None:
     """Validate Goal 4 source contracts without authentication or cloud access."""
     run(["uv", "run", "python", "scripts/validate_goal4.py"])
+
+
+def goal5_static() -> None:
+    """Validate Goal 5 contracts, fixtures, SQL, and scope without cloud access."""
+    run(["uv", "run", "python", "scripts/validate_goal5.py"])
 
 
 TERRAFORM_DEVELOPMENT = "infrastructure/environments/development"
@@ -453,6 +459,7 @@ COMMANDS = {
     "infra-security": infra_security,
     "infra-plan": infra_plan,
     "databricks-static": databricks_static,
+    "goal5-static": goal5_static,
     "clean": clean,
 }
 
