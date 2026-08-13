@@ -13,12 +13,129 @@ verification.
   Terraform remediation and report are committed at
   `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`.
 - Reconstruction date: `2026-08-05`
-- Last verified commit: `a778cfdfceaf6c704f98d83752c54c73a7d9208f`
+- Last verified commit: `9c0d67b30db96a24d015c9cb79821b2fbb107f23`
 - Goal 4 evidence commit: `a778cfdfceaf6c704f98d83752c54c73a7d9208f`
   (`goal-04: record connected lakehouse verification`). It contains the
   reviewed Goal 4 implementation, durable verification reports, the final
   zero-drift evidence, and the current bundle-validation evidence; ignored
   local inputs and credentials are not tracked.
+- Goal 5 evidence commit: `9c0d67b30db96a24d015c9cb79821b2fbb107f23`
+  (`goal-05: complete synthetic ingestion MVP verification`). It contains the
+  reviewed Goal 5 implementation, contracts, neutral synthetic fixtures,
+  Terraform/bundle configuration, tests, runbooks, and durable connected
+  verification reports; ignored local inputs and credentials are not tracked.
+- Goal 5 MVP Phase 5-0 read-only preflight completed on `2026-08-12`; no
+  Databricks or AWS mutation occurred. The durable report is
+  `docs/verification/GOAL-05-PHASE-5-0-PREFLIGHT-2026-08-12.md`. The existing
+  seven Goal 4 tables remain managed Delta UniForm according to the
+  authoritative Tables API, which is an accepted Goal 5 interoperability
+  profile and is not native Iceberg.
+- Goal 5 Phase 5-1 minimal ingestion design is recorded in
+  `docs/plans/GOAL-05-MVP-INGESTION-PLAN.md`. The offline implementation
+  checkpoint is now complete and is recorded in
+  `docs/verification/GOAL-05-PHASE-5-2-OFFLINE-IMPLEMENTATION-2026-08-12.md`;
+  no connected plan, bundle operation, SQL/job run, AWS mutation, or
+  Databricks mutation occurred.
+- The implementation includes typed contracts/adapters, neutral fixtures,
+  nine managed-table SQL definitions, one existing-warehouse bundle workflow,
+  deterministic quality/provenance/idempotency assertions, three optional
+  Terraform-managed SSE-KMS source objects, and offline format-policy tests.
+  At this offline implementation checkpoint, the exact
+  `read_files`/parameterized-path capability, connected table creation, and
+  live output evidence were still unverified; their later connected evidence
+  is recorded below and committed in the Goal 5 evidence commit.
+- Goal 5 Phase 5-3 connected read-only revalidation passed for the approved
+  development workspace, metastore, warehouse, AWS account, and region. The
+  saved development plan was generated from the repository root with the
+  source-object flag enabled only through a transient `-var`; it contains
+  exactly three S3 object creates and zero update/replace/destroy actions. Its
+  durable report is
+  `docs/verification/GOAL-05-PHASE-5-3-CONNECTED-PLAN-2026-08-12.md`, and its
+  saved-plan SHA-256 is
+  `457d6f7a50be5b7cca1ed6240b9cab7c5e16bb9c0ef4242d67d520e21f1b8474`.
+  The approved plan then applied exactly three source objects; immediate
+  read-only S3 inspection and fixture hash comparison passed. Durable evidence
+  is `docs/verification/GOAL-05-PHASE-5-4-SOURCE-OBJECT-APPLY-2026-08-12.md`.
+- The separately approved strict connected bundle validation then stopped
+  before deployment with one warning: the required explicit
+  `sql/goal_04/remediation/**` exclusion matched no files because the
+  remediation directory is intentionally empty. Strict mode converted that
+  warning into exit `1`; no deployment or execution occurred. Durable
+  evidence is
+  `docs/verification/GOAL-05-PHASE-5-5-BUNDLE-VALIDATION-2026-08-12.md`.
+- The approved offline remediation added only the non-executable
+  `databricks/sql/goal_04/remediation/README.md` marker, retained the explicit
+  sync exclusion, and added static regression coverage. No connected retry or
+  bundle deployment occurred after this remediation. Full offline evidence is
+  `docs/verification/GOAL-05-PHASE-5-6-OFFLINE-REMEDIATION-2026-08-12.md`.
+- The separately approved remediated strict connected bundle validation then
+  passed with `Validation OK!`, no warning, error, or recommendation, using
+  the unchanged full source aggregate
+  `eb4c7e6db55d9ec5aedf63480ecf00bb5cd404b9b64ddc1f4930d87ab1060368`.
+  Durable evidence is
+  `docs/verification/GOAL-05-PHASE-5-7-BUNDLE-VALIDATION-2026-08-12.md`.
+  No deployment or job/SQL execution occurred.
+- The separately approved exact-source bundle deployment then completed with
+  `Deployment complete!`. Read-only inspection confirmed new Goal 5 job
+  `382877731318442`, all six byte-matched Goal 5 SQL workspace files, correct
+  workflow-SP run-as and ACLs, unchanged five Goal 4 job identities, no active
+  Goal 5 run, and the existing warehouse still stopped. Durable evidence is
+  `docs/verification/GOAL-05-PHASE-5-8-BUNDLE-DEPLOYMENT-2026-08-12.md`.
+- The first separately approved Goal 5 workflow run `1025066514456351` stopped
+  fail-closed on `2026-08-13`. `create_goal5_tables` succeeded; the three
+  `read_files` ingestion tasks failed with `INSUFFICIENT_PERMISSIONS` / "User
+  does not have permission SELECT on any file", and the two verification tasks
+  were skipped upstream. No retry ran and no source data was written. The
+  durable analysis and offline declarative remediation are recorded in
+  `docs/verification/GOAL-05-SOURCE-ACCESS-REMEDIATION-2026-08-13.md`.
+- The separately approved strict connected validation of the corrected CDC
+  source set passed with `Validation OK!`, exit `0`, and no warning, error, or
+  recommendation. It used aggregate
+  `bd4cd49ee07147f9f240a10b936c78dad76b9dca62622b10f0fb62f6318eb3cd` and is
+  recorded in `docs/verification/GOAL-05-CDC-BUNDLE-VALIDATION-2026-08-13.md`.
+  No deployment, job/SQL execution, table/data mutation, compute creation,
+  Terraform operation, or AWS operation occurred.
+- The separately approved corrected bundle deployment completed with
+  `Deployment complete!`. Read-only inspection confirmed the existing Goal 5
+  job `382877731318442`, six SQL tasks, workflow service-principal run-as,
+  existing warehouse `757e0335c6efb51e`, and deployed CDC SQL hash
+  `9ce80b73ec48bf0a7568fad81faf791f286dbfbae4c66ca0a9af84fe013f66fd`.
+  Run history showed no new run from deployment. Durable evidence is
+  `docs/verification/GOAL-05-CDC-BUNDLE-DEPLOYMENT-2026-08-13.md`.
+- The separately approved single corrected workflow retry ran as
+  `149148676670509`. Table creation, structured ingestion, document ingestion,
+  and CDC ingestion succeeded, but `verify_goal5_outputs` failed its CDC
+  current-state assertion; idempotency was skipped upstream. No further run
+  or connected operation was performed. Durable evidence is
+  `docs/verification/GOAL-05-WORKFLOW-RETRY-2026-08-13.md`.
+- The approved offline CDC output-assertion remediation replaced the brittle
+  text comparison of a `DOUBLE` JSON value with numeric `TRY_CAST` semantics,
+  preserved the UPDATE/tombstone assertions, and added fail-closed static
+  regression coverage. Goal 4/Goal 5 static validation, 124 pytest tests
+  (97.15% coverage), Ruff, mypy, Bandit, detect-secrets, and `git diff --check`
+  passed. Its durable report is
+  `docs/verification/GOAL-05-CDC-OUTPUT-ASSERTION-REMEDIATION-2026-08-13.md`.
+- The separately approved strict connected validation for that remediation
+  passed with `Validation OK!`, exit `0`, and no warning, error, or
+  recommendation for aggregate
+  `e06e5e26ac83aa0ea30c93f12b747686cef67e3d80f9cb862998f931477dd507`.
+  Evidence is
+  `docs/verification/GOAL-05-CDC-OUTPUT-ASSERTION-BUNDLE-VALIDATION-2026-08-13.md`.
+  No deployment, job/SQL execution, Terraform, or AWS operation occurred.
+- The separately approved redeployment of that exact aggregate completed with
+  `Deployment complete!`. Immediate read-only inspection confirmed the
+  existing Goal 5 job, six tasks, workflow-SP run-as, warehouse bindings, and
+  byte-matched output-verification SQL. No job run was triggered. Evidence is
+  `docs/verification/GOAL-05-CDC-OUTPUT-ASSERTION-BUNDLE-DEPLOYMENT-2026-08-13.md`.
+- The separately approved single workflow retry after that redeployment ran as
+  `172279846311777` and terminated `SUCCESS`: all three ingestion tasks,
+  output assertions, and idempotency assertions passed. Its durable evidence
+  is `docs/verification/GOAL-05-NUMERIC-ASSERTION-WORKFLOW-SUCCESS-2026-08-13.md`.
+- Read-only post-run verification confirmed all three SSE-KMS synthetic source
+  objects, all nine Goal 5 Tables API entries as managed Delta UniForm with
+  Iceberg metadata, the existing metastore/bundle/Goal 4 table health, and no
+  classic cluster. Evidence is
+  `docs/verification/GOAL-05-CONNECTED-SYNTHETIC-VERIFICATION-2026-08-13.md`.
 - Last repository-wide executable verification: `VERIFIED BY PROJECT OWNER`
 - Verification provenance: the project owner confirmed on `2026-08-05` that
   the Goal 2 and Goal 3A acceptance checks passed on the previous development
@@ -206,6 +323,7 @@ verification.
 | Goal 3A — AWS Terraform implementation and offline validation | VERIFIED | `a70d806da9b7df6d9218537062bf8670c817b662` plus CI fixes `9cc3104`, `fdca7c8`, and `2a9abfe`; the isolated synthetic validation resources and accepted base-alarm remediation are committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`. | On `2026-08-10`, Terraform formatting, bootstrap/development validation, 9 Terraform contract runs, TFLint, Trivy, strict preflight, Ruff, mypy, 15 pytest tests with 96.67% coverage, Bandit, detect-secrets, environment validation, dependency audit, pre-commit file-integrity hooks, and `git diff --check` passed. Terraform/Ruff/mypy/detect-secrets/pytest hooks were validated directly rather than duplicated inside pre-commit. The reviewed source and durable evidence are committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`. |
 | Goal 3B — Connected AWS deployment and smoke testing | VERIFIED | Bootstrap, development, VPC Flow Logs, static smoke-task foundations, dedicated NAT fallback, Redis revision 4, and the base RDS CPU alarm remediation were applied from separately approved saved plans. The reviewed implementation is committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`. Alarm plan SHA-256 `db143549fe551a397afac6b88248b8be74b48b689fa8a685c6868af43816f331` applied as `1 added, 1 changed, 0 destroyed`. | `docs/verification/GOAL-03B-CONNECTED-EXECUTION-2026-08-05.md`, committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`, records all three passing dynamic smoke checks, deterministic connected SG/AOSS unauthorized-path enforcement, VPC Flow Log ingestion, successful alarm apply, read-only CloudWatch/KMS verification, and final post-remediation zero-drift plan SHA-256 `db9ec9f069bf03d724689d1cf2a3347a43dd63c18df81f99463f18bf649d78be` exiting `0` with zero non-no-op resource/output changes. |
 | Goal 4 — Databricks, Unity Catalog, and Iceberg | VERIFIED — PROJECT ICEBERG-COMPATIBILITY PROFILE | Evidence commit `a778cfdfceaf6c704f98d83752c54c73a7d9208f` contains the reviewed staged Terraform, verified storage credential, development UC foundation, five-job bundle, durable reports, final zero-drift evidence, and current strict bundle-validation evidence. Tables API truth is seven managed Delta UniForm tables with Iceberg-compatible metadata in approved S3; the project owner approved retaining them as the fixed project representation without destructive recreation. Native Iceberg is no longer planned. | `docs/verification/GOAL-04-FINAL-VERIFICATION-2026-08-11.md`, `docs/verification/GOAL-04-NATIVE-ICEBERG-FORMAT-BLOCKER-2026-08-11.md`, and `docs/verification/GOAL-04-BUNDLE-SYNC-EXCLUDE-VERIFICATION-2026-08-12.md`; final Terraform plan SHA-256 `2fe6fd3eeeea72b703d27d10bba2cf5b0fcbdc27933ee2fb2857030ecab0edaa` reported 189 no-op and zero non-no-op actions, and the current bundle aggregate `49730c2fe6ccc38d15bc9511f626e17992d088eb4ced45eb745c22ff80769027` returned `Validation OK!`. |
+| Goal 5 MVP — Structured + Unstructured + CDC synthetic ingestion | VERIFIED — APPROVED DELTA UNIFORM ICEBERG-COMPATIBILITY PROFILE | Evidence commit `9c0d67b30db96a24d015c9cb79821b2fbb107f23` contains the reviewed typed ingestion framework, Terraform/bundle configuration, neutral fixtures, tests, runbooks, and all durable Goal 5 verification reports. | [Final verification](verification/GOAL-05-FINAL-VERIFICATION-2026-08-13.md), committed at `9c0d67b30db96a24d015c9cb79821b2fbb107f23`, maps all 44 criteria. Final plan SHA-256 `d2d57ef74c713f3e83349b225a87c48a2d2e7ac1cbbc4c3898c59f4ebcd0d6f1` exited `0` with `No changes`; all nine tables are accurately recorded as Unity Catalog managed Delta UniForm Iceberg interoperability, not native Iceberg. |
 
 ## Current next checkpoint
 
@@ -226,14 +344,37 @@ The sync.exclude deployment checkpoint is complete and recorded in
 `docs/verification/GOAL-04-BUNDLE-SYNC-EXCLUDE-VERIFICATION-2026-08-12.md`.
 The connected identity/resource inspection, grant remediation, final
 zero-drift plan, strict bundle validation, and durable evidence commit are
-complete. No table drop/recreate is required. The next roadmap goal remains
-Goal 5, which is not started and requires separate approval; final evidence
-must retain the explicit Delta UniForm/native-Iceberg distinction.
+complete. No table drop/recreate is required.
 
-Do not begin Goal 5 without separate approval. This status update does not
-authorize SQL/job execution, Terraform plan/apply/destroy, AWS mutation,
-additional compute, Goal 5 work, arbitrary ECS task, or reuse of any stale
-saved plan.
+Goal 5 is `VERIFIED` against immutable evidence commit
+`9c0d67b30db96a24d015c9cb79821b2fbb107f23` under the approved Delta UniForm
+Iceberg-compatibility profile. Goal 5 technical acceptance is complete.
+The final saved development Terraform plan used transient
+`goal_5_source_objects_enabled=true`, has SHA-256
+`d2d57ef74c713f3e83349b225a87c48a2d2e7ac1cbbc4c3898c59f4ebcd0d6f1`, exited
+`0`, and reported `No changes`. It caused no apply, destroy, bundle deployment,
+job/SQL execution, AWS mutation, or Databricks mutation. The final evidence
+matrix is `docs/verification/GOAL-05-FINAL-VERIFICATION-2026-08-13.md`; it
+records the successful all-task workflow `172279846311777`, S3 preservation,
+nine authoritative managed Delta UniForm Iceberg-compatible tables, Goal 4
+health, scope controls, and cost controls. The explicit Delta UniForm/native
+Iceberg distinction is retained.
+
+Goal 5 IMPLEMENTED: synthetic structured CSV ingestion; minimal Markdown/TXT
+document metadata ingestion; deterministic synthetic CDC INSERT/UPDATE/DELETE
+semantics; typed contract validation; provenance; basic data quality;
+idempotency; auditable ingestion runs; and Unity Catalog managed Delta UniForm
+Iceberg-compatible lakehouse output.
+
+Goal 5 DEFERRED: real database connectors; production CDC; Debezium;
+Kafka/MSK/Kinesis; REST ingestion; production streaming; PDF/OCR; document
+chunking; embeddings; OpenSearch indexing; generalized replay/backfill;
+advanced schema evolution; and advanced watermark management. Those are not
+production-readiness claims and do not form Goal 5 MVP acceptance criteria.
+
+No further Goal 5 connected operation is required or authorized. The next
+roadmap checkpoint is Goal 6 only after a separately approved goal request;
+the existing Goal 5 evidence does not authorize it.
 
 ## Freshness rules
 
