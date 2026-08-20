@@ -1,0 +1,354 @@
+#!/usr/bin/env bash
+# Terraform-owned, secret-free bootstrap.
+set -euo pipefail
+
+ROLE='${role}'
+IMAGE='${image}'
+CONTAINER_NAME="doris-$ROLE"
+MOUNT_PATH='${data_mount}'
+VOLUME_ID='${volume_id}'
+ADMIN_SECRET_ARN='${admin_secret_arn}'
+PRIORITY_NETWORKS='${priority_networks}'
+FE_PRIVATE_IP='${fe_private_ip}'
+EXPECTED_PRIVATE_IP='${expected_private_ip}'
+LOG_GROUP='${log_group}'
+REGION='${region}'
+
+# Emit a non-secret early marker before the role volume is mounted.
+ROOT_BOOTSTRAP_LOG="/var/log/goal6-doris-bootstrap.log"
+BOOTSTRAP_COMPLETED="false"
+: > "$ROOT_BOOTSTRAP_LOG" 2>/dev/null || true
+emit_early_status() {
+  local status="$1"
+  local port="$2"
+  local exit_code="$${3:-unknown}"
+  local marker
+  marker="{\"goal\":\"goal-06\",\"role\":\"$ROLE\",\"status\":\"$status\",\"port\":\"$port\",\"source\":\"root-bootstrap\",\"exit_code\":\"$exit_code\"}"
+  printf '%s\n' "$marker" | tee -a "$ROOT_BOOTSTRAP_LOG"
+  printf '%s\n' "$marker" | logger -t goal6-doris-bootstrap 2>/dev/null || true
+}
+goal6_on_exit() {
+  local exit_code="$1"
+  if [ "$BOOTSTRAP_COMPLETED" != "true" ] && [ "$exit_code" -ne 0 ]; then
+    emit_early_status "bootstrap-failed" "none" "$exit_code"
+  fi
+}
+trap 'goal6_on_exit "$?"' EXIT
+emit_early_status "bootstrap-invoked" "none"
+
+VOLUME_SERIAL="$(printf '%s' "$VOLUME_ID" | tr -d '-')"
+until DEVICE_PATH="$(find /dev/disk/by-id -type l -name "*$VOLUME_SERIAL*" -print -quit)" && [ -n "$DEVICE_PATH" ]; do
+  sleep 5
+done
+
+if ! blkid "$DEVICE_PATH" >/dev/null 2>&1; then
+  mkfs.ext4 -F "$DEVICE_PATH"
+fi
+mkdir -p "$MOUNT_PATH"
+mount "$DEVICE_PATH" "$MOUNT_PATH"
+grep -q "$DEVICE_PATH" /etc/fstab || echo "$DEVICE_PATH $MOUNT_PATH ext4 defaults,nofail 0 2" >> /etc/fstab
+
+dnf install -y docker || yum install -y docker
+dnf install -y awscli jq || yum install -y awscli jq
+dnf install -y amazon-cloudwatch-agent || yum install -y amazon-cloudwatch-agent
+mkdir -p /opt/ask-david/doris/config "$MOUNT_PATH/$ROLE-data" "$MOUNT_PATH/$ROLE-log"
+BOOTSTRAP_STATUS_FILE="$MOUNT_PATH/$ROLE-log/bootstrap-status.log"
+# Preserve early evidence on the encrypted role volume.
+if [ -s "$ROOT_BOOTSTRAP_LOG" ]; then
+  cat "$ROOT_BOOTSTRAP_LOG" >> "$BOOTSTRAP_STATUS_FILE"
+fi
+# Persist non-secret readiness evidence for the Doris log stream.
+emit_status() {
+  local status="$1"
+  local port="$2"
+  local marker
+  marker="{\"goal\":\"goal-06\",\"role\":\"$ROLE\",\"status\":\"$status\",\"port\":\"$port\"}"
+  printf '%s\n' "$marker" | tee -a "$BOOTSTRAP_STATUS_FILE"
+  printf '%s\n' "$marker" >> "$ROOT_BOOTSTRAP_LOG"
+}
+
+# Apply Terraform-owned Doris host limits before Docker starts.
+DORIS_NOFILE_LIMIT=1000000
+DORIS_VM_MAX_MAP_COUNT=2000000
+cat > /etc/sysctl.d/99-goal6-doris.conf <<EOF
+vm.max_map_count = $DORIS_VM_MAX_MAP_COUNT
+EOF
+if ! sysctl -w "vm.max_map_count=$DORIS_VM_MAX_MAP_COUNT" >/dev/null; then
+  emit_status "host-prerequisites-failed" "none" >&2
+  exit 1
+fi
+mkdir -p /etc/security/limits.d /etc/systemd/system/docker.service.d
+cat > /etc/security/limits.d/99-goal6-doris.conf <<EOF
+* soft nofile $DORIS_NOFILE_LIMIT
+* hard nofile $DORIS_NOFILE_LIMIT
+EOF
+cat > /etc/systemd/system/docker.service.d/99-goal6-doris.conf <<EOF
+[Service]
+LimitNOFILE=$DORIS_NOFILE_LIMIT
+EOF
+systemctl daemon-reload
+systemctl enable --now docker
+systemctl restart docker
+emit_status "host-prerequisites-ready" "none"
+
+if [ "$ROLE" = "fe" ]; then
+  # Preserve image defaults; render only Terraform-owned overrides.
+  cat > /opt/ask-david/doris/config/fe_custom.conf <<EOF
+priority_networks = $PRIORITY_NETWORKS
+enable_ssl = true
+EOF
+  DATA_VOLUME="$MOUNT_PATH/fe-meta:/opt/apache-doris/fe/doris-meta"
+  CONFIG_VOLUME="/opt/ask-david/doris/config/fe_custom.conf:/opt/apache-doris/fe/conf/fe_custom.conf:ro"
+  LOG_VOLUME="$MOUNT_PATH/fe-log:/opt/apache-doris/fe/log"
+else
+  # Preserve image defaults and pre-create the EBS bind source.
+  install -d -m 0750 "$MOUNT_PATH/be-storage"
+  cat > /opt/ask-david/doris/config/be_custom.conf <<EOF
+priority_networks = $PRIORITY_NETWORKS
+storage_root_path = /opt/apache-doris/be/storage,medium:hdd
+EOF
+  DATA_VOLUME="$MOUNT_PATH/be-storage:/opt/apache-doris/be/storage"
+  CONFIG_VOLUME="/opt/ask-david/doris/config/be_custom.conf:/opt/apache-doris/be/conf/be_custom.conf:ro"
+  LOG_VOLUME="$MOUNT_PATH/be-log:/opt/apache-doris/be/log"
+fi
+
+# Doris entrypoints require private discovery variables.
+LOCAL_IP="$(hostname -I | awk '{print $1}')"
+if ! printf '%s' "$LOCAL_IP" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
+  emit_status "invalid-private-ip" "none" >&2
+  exit 1
+fi
+
+DOCKER_ENV=(--env "FE_PRIORITY_NETWORKS=$PRIORITY_NETWORKS")
+if [ "$ROLE" = "fe" ]; then
+  FE_SERVERS="fe1:$LOCAL_IP:9010"
+  DORIS_PORT="9030"
+  DOCKER_ENV+=(--env "FE_SERVERS=$FE_SERVERS" --env "FE_ID=1")
+else
+  if ! printf '%s' "$FE_PRIVATE_IP" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
+    emit_status "missing-fe-private-ip" "none" >&2
+    exit 1
+  fi
+  FE_SERVERS="fe1:$FE_PRIVATE_IP:9010"
+  BE_ADDR="$LOCAL_IP:9050"
+  DORIS_PORT="9050"
+  DOCKER_ENV+=(--env "FE_SERVERS=$FE_SERVERS" --env "BE_ADDR=$BE_ADDR")
+fi
+
+# Persist the Terraform-managed private-IP contract before container start.
+PRIVATE_IP_DIAGNOSTICS_FILE="$MOUNT_PATH/$ROLE-log/private-ip-diagnostics.log"
+{
+  printf 'expected_private_ip=%s\n' "$EXPECTED_PRIVATE_IP"
+  printf 'observed_private_ip=%s\n' "$LOCAL_IP"
+  printf 'role=%s\n' "$ROLE"
+  printf 'subnet_validation=terraform-cidrhost-enumeration\n'
+} > "$PRIVATE_IP_DIAGNOSTICS_FILE"
+if [ "$LOCAL_IP" != "$EXPECTED_PRIVATE_IP" ]; then
+  emit_status "private-ip-mismatch" "$DORIS_PORT" >&2
+  exit 1
+fi
+emit_status "private-ip-configured" "$DORIS_PORT"
+
+# Wait for private FE registration before starting BE.
+if [ "$ROLE" = "be" ]; then
+  FE_REGISTRATION_PORT="9030"
+  FE_REGISTRATION_READY="false"
+  emit_status "fe-registration-port-waiting" "$FE_REGISTRATION_PORT"
+  for _ in $(seq 1 120); do
+    if timeout 2 bash -c 'echo >/dev/tcp/"$1"/9030' _ "$FE_PRIVATE_IP" 2>/dev/null; then
+      FE_REGISTRATION_READY="true"
+      break
+    fi
+    sleep 5
+  done
+  if [ "$FE_REGISTRATION_READY" != "true" ]; then
+    emit_status "fe-registration-port-unavailable" "$FE_REGISTRATION_PORT" >&2
+    exit 1
+  fi
+  emit_status "fe-registration-port-ready" "$FE_REGISTRATION_PORT"
+fi
+
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
+{
+  "logs": {
+    "force_flush_interval": 5,
+    "logs_collected": {
+      "files": {"collect_list": [
+        {
+          "file_path": "$MOUNT_PATH/$ROLE-log/bootstrap-status.log",
+          "log_group_name": "$LOG_GROUP",
+          "log_stream_name": "{instance_id}/$ROLE/bootstrap-status",
+          "timezone": "UTC"
+        },
+        {
+          "file_path": "$ROOT_BOOTSTRAP_LOG",
+          "log_group_name": "$LOG_GROUP",
+          "log_stream_name": "{instance_id}/$ROLE/bootstrap-root",
+          "timezone": "UTC"
+        },
+        {
+          "file_path": "$MOUNT_PATH/$ROLE-log/private-ip-diagnostics.log",
+          "log_group_name": "$LOG_GROUP",
+          "log_stream_name": "{instance_id}/$ROLE/private-ip",
+          "timezone": "UTC"
+        },
+        {
+          "file_path": "$MOUNT_PATH/$ROLE-log/container-diagnostics.log",
+          "log_group_name": "$LOG_GROUP",
+          "log_stream_name": "{instance_id}/$ROLE/container",
+          "timezone": "UTC"
+        },
+        {
+          "file_path": "$MOUNT_PATH/$ROLE-log/docker-run.log",
+          "log_group_name": "$LOG_GROUP",
+          "log_stream_name": "{instance_id}/$ROLE/docker-run",
+          "timezone": "UTC"
+        }
+      ]}
+    }
+  }
+}
+EOF
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+emit_status "bootstrap-started" "none"
+DOCKER_RUN_OUTPUT_FILE="$MOUNT_PATH/$ROLE-log/docker-run.log"
+set +e
+timeout --foreground --kill-after=10s 120s docker run --detach --restart unless-stopped --network host \
+  --name "$CONTAINER_NAME" \
+  --ulimit "nofile=$DORIS_NOFILE_LIMIT:$DORIS_NOFILE_LIMIT" \
+  "$${DOCKER_ENV[@]}" \
+  --volume "$DATA_VOLUME" \
+  --volume "$CONFIG_VOLUME" \
+  --volume "$LOG_VOLUME" \
+  "$IMAGE" >"$DOCKER_RUN_OUTPUT_FILE" 2>&1
+DOCKER_RUN_STATUS=$?
+set -e
+CONTAINER_ID="$(docker ps -aq --filter "name=^$CONTAINER_NAME$" | head -n 1)"
+
+# Persist bounded, redacted startup diagnostics on the encrypted role volume.
+CONTAINER_DIAGNOSTICS_FILE="$MOUNT_PATH/$ROLE-log/container-diagnostics.log"
+write_container_diagnostics() {
+  {
+    printf 'container_name=%s\n' "$CONTAINER_NAME"
+    printf 'docker_run_status=%s\n' "$DOCKER_RUN_STATUS"
+    printf 'container_id=%s\n' "$CONTAINER_ID"
+    if [ -n "$CONTAINER_ID" ]; then
+      docker inspect --format 'state={{.State.Status}} running={{.State.Running}} exit_code={{.State.ExitCode}} error={{.State.Error}}' "$CONTAINER_ID" 2>&1 || true
+      docker logs --tail 200 "$CONTAINER_ID" 2>&1 \
+        | sed -E 's/((password|passwd|secret|token|authorization|access[_-]?key)[[:space:]]*[:=][[:space:]]*)[^[:space:]]+/\1<redacted>/Ig' \
+        || true
+    else
+      docker ps -a --filter "name=^$CONTAINER_NAME$" --no-trunc 2>&1 || true
+    fi
+  } > "$CONTAINER_DIAGNOSTICS_FILE" 2>&1 || true
+}
+
+# Emit bounded, non-sensitive container state to the bootstrap stream.
+emit_container_diagnostic_summary() {
+  local listener_state="$${1:-unknown}"
+  local container_present="false"
+  local container_state="absent"
+  local running="false"
+  local exit_code="unknown"
+  local error_present="false"
+  local redacted_log_lines="0"
+  local log_signal="none"
+  if [ -n "$CONTAINER_ID" ]; then
+    container_present="true"
+    container_state="$(docker inspect --format '{{.State.Status}}' "$CONTAINER_ID" 2>/dev/null || printf 'unknown')"
+    running="$(docker inspect --format '{{.State.Running}}' "$CONTAINER_ID" 2>/dev/null || printf 'unknown')"
+    exit_code="$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER_ID" 2>/dev/null || printf 'unknown')"
+    if [ -n "$(docker inspect --format '{{.State.Error}}' "$CONTAINER_ID" 2>/dev/null || true)" ]; then
+      error_present="true"
+    fi
+    redacted_log_lines="$(docker logs --tail 200 "$CONTAINER_ID" 2>/dev/null | wc -l | tr -d ' ' || printf '0')"
+    if docker logs --tail 200 "$CONTAINER_ID" 2>/dev/null | grep -Eiq 'bind|address already in use|cannot assign requested|listen'; then
+      log_signal="bind"
+    elif docker logs --tail 200 "$CONTAINER_ID" 2>/dev/null | grep -Eiq 'doris-meta|metadata|cluster[[:space:]_-]*id|bdb|image'; then
+      log_signal="metadata"
+    elif docker logs --tail 200 "$CONTAINER_ID" 2>/dev/null | grep -Eiq 'unknown property|invalid[[:space:]]+config|configuration|config[[:space:]]+error'; then
+      log_signal="configuration"
+    elif docker logs --tail 200 "$CONTAINER_ID" 2>/dev/null | grep -Eiq 'exception|fatal|panic|error'; then
+      log_signal="exception"
+    elif [ "$redacted_log_lines" -gt 0 ]; then
+      log_signal="other"
+    fi
+  fi
+  local marker
+  marker="{\"goal\":\"goal-06\",\"role\":\"$ROLE\",\"status\":\"container-diagnostics-summary\",\"port\":\"$DORIS_PORT\",\"listener_state\":\"$listener_state\",\"container_present\":\"$container_present\",\"container_state\":\"$container_state\",\"running\":\"$running\",\"exit_code\":\"$exit_code\",\"error_present\":\"$error_present\",\"redacted_log_lines\":\"$redacted_log_lines\",\"log_signal\":\"$log_signal\"}"
+  printf '%s\n' "$marker" | tee -a "$BOOTSTRAP_STATUS_FILE"
+  printf '%s\n' "$marker" >> "$ROOT_BOOTSTRAP_LOG"
+}
+if [ "$DOCKER_RUN_STATUS" -ne 0 ] || [ -z "$CONTAINER_ID" ]; then
+  write_container_diagnostics
+  emit_container_diagnostic_summary "unavailable"
+  emit_status "container-launch-failed" "$DORIS_PORT" >&2
+  exit 1
+fi
+write_container_diagnostics
+emit_container_diagnostic_summary "starting"
+
+# Fail visibly unless the local private listener opens.
+LISTENER_READY="false"
+for _ in $(seq 1 90); do
+  if ! docker inspect --format '{{.State.Running}}' "$CONTAINER_ID" 2>/dev/null | grep -qx true; then
+    write_container_diagnostics
+    emit_container_diagnostic_summary "unavailable"
+    emit_status "container-exited" "$DORIS_PORT"
+    break
+  fi
+  if (echo >/dev/tcp/127.0.0.1/$DORIS_PORT) 2>/dev/null; then
+    LISTENER_READY="true"
+    break
+  fi
+  sleep 5
+done
+
+if [ "$LISTENER_READY" = "true" ]; then
+  # BE also requires writable EBS storage and non-zero reported capacity.
+  if [ "$ROLE" = "be" ]; then
+    BE_STORAGE_CONTAINER_PATH="/opt/apache-doris/be/storage"
+    if ! docker exec "$CONTAINER_ID" sh -ec 'test -d "$1" && test -w "$1"' _ "$BE_STORAGE_CONTAINER_PATH"; then
+      emit_container_diagnostic_summary "unavailable"
+      emit_status "be-storage-root-unavailable" "$DORIS_PORT" >&2
+      exit 1
+    fi
+    emit_status "be-storage-root-writable" "$DORIS_PORT"
+
+    BE_BACKEND_CAPACITY_READY="false"
+    for _ in $(seq 1 60); do
+      if docker exec "$CONTAINER_ID" mysql --ssl --protocol=TCP \
+        --host="$FE_PRIVATE_IP" --port=9030 --user=root --batch --skip-column-names \
+        -e 'SHOW BACKENDS;' 2>/dev/null | awk -F '\t' -v host="$LOCAL_IP" '
+          $2 == host {
+            total_capacity = $17
+            if (tolower($10) == "true" && tolower($11) == "false" && total_capacity !~ /^0([.]0+)?([[:space:]]*[[:alpha:]]+)?$/) {
+              found = 1
+            }
+            exit
+          }
+          END { exit(found ? 0 : 1) }
+        '; then
+        BE_BACKEND_CAPACITY_READY="true"
+        break
+      fi
+      sleep 5
+    done
+    if [ "$BE_BACKEND_CAPACITY_READY" != "true" ]; then
+      emit_container_diagnostic_summary "unavailable"
+      emit_status "be-storage-capacity-unavailable" "$DORIS_PORT" >&2
+      exit 1
+    fi
+    emit_status "be-storage-capacity-ready" "$DORIS_PORT"
+  fi
+  emit_container_diagnostic_summary "ready"
+  emit_status "doris-port-ready" "$DORIS_PORT"
+  BOOTSTRAP_COMPLETED="true"
+  exit 0
+fi
+write_container_diagnostics
+emit_container_diagnostic_summary "unavailable"
+emit_status "doris-port-unavailable" "$DORIS_PORT" >&2
+exit 1

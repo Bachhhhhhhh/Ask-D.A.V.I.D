@@ -1,0 +1,15 @@
+FROM public.ecr.aws/docker/library/alpine:3.21
+
+RUN apk add --no-cache bash curl jq mariadb-client
+COPY docker/doris-verifier/ /app/
+COPY doris/ /app/doris/
+RUN chmod 0555 \
+    /app/doris-admin-refresh \
+    /app/doris-readonly-verify \
+    /app/doris-rbac-verify \
+    /app/doris-query-limit-verify \
+    /app/doris-audit-verify \
+    /app/doris-rebuild-serving
+
+USER 65532:65532
+ENTRYPOINT ["/bin/sh"]

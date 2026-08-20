@@ -67,6 +67,9 @@ module "databricks_identities" {
   business_reader_group_name      = local.goal_4_business_reader_group_name
   workflow_service_principal_name = local.goal_4_workflow_service_principal_name
   denied_service_principal_name   = local.goal_4_denied_service_principal_name
+  doris_external_read_service_principal_name = (
+    var.goal_6_enabled ? local.goal_6_doris_external_read_service_principal_name : null
+  )
 }
 
 module "databricks_lakehouse" {
@@ -90,6 +93,10 @@ module "databricks_lakehouse" {
   workflow_service_principal_application_id = (
     module.databricks_identities.workflow_service_principal_application_id
   )
+  doris_external_read_service_principal_application_id = (
+    module.databricks_identities.doris_external_read_service_principal_application_id
+  )
+  doris_external_read_enabled = var.goal_6_enabled
 
   depends_on = [module.databricks_aws_storage]
 }

@@ -34,6 +34,8 @@ run "development_foundation_is_plannable" {
     opensearch_collection_prefix    = "ask-david"
     bucket_name_prefix              = "ask-david-contract"
     goal_4_stage                    = "disabled"
+    goal_6_enabled                  = false
+    goal_6_verifier_tasks_enabled   = false
   }
 
   assert {
@@ -70,6 +72,8 @@ run "development_defines_static_synthetic_smoke_tasks" {
     opensearch_collection_prefix    = "ask-david"
     bucket_name_prefix              = "ask-david-contract"
     goal_4_stage                    = "disabled"
+    goal_6_enabled                  = false
+    goal_6_verifier_tasks_enabled   = false
   }
 
   assert {

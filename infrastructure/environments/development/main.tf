@@ -16,6 +16,7 @@ module "kms" {
   account_id              = var.aws_account_id
   region                  = var.aws_region
   storage_access_role_arn = local.goal_4_enabled ? module.databricks_aws_storage.role_arn : null
+  goal_6_enabled          = var.goal_6_enabled
   tags                    = local.tags
 }
 module "storage" {
@@ -31,7 +32,12 @@ module "secrets" {
   source      = "../../modules/secrets"
   name_prefix = local.name_prefix
   kms_key_id  = module.kms.secrets_key_id
-  tags        = local.tags
+  additional_containers = var.goal_6_enabled ? toset([
+    "doris/admin",
+    "doris/external-read-oauth",
+    "doris/query",
+  ]) : toset([])
+  tags = local.tags
 }
 module "runtime" {
   source                 = "../../modules/runtime"
@@ -69,7 +75,13 @@ module "iam" {
   source                = "../../modules/iam"
   name_prefix           = local.name_prefix
   runtime_log_group_arn = module.observability.runtime_log_group_arn
-  tags                  = local.tags
+  goal6_secret_arns = var.goal_6_enabled ? [
+    module.secrets.secret_arns["doris/admin"],
+    module.secrets.secret_arns["doris/external-read-oauth"],
+    module.secrets.secret_arns["doris/query"],
+  ] : []
+  goal6_secrets_kms_key_arn = var.goal_6_enabled ? module.kms.secrets_key_arn : null
+  tags                      = local.tags
 }
 module "ecr_pull_through" {
   source = "../../modules/ecr-pull-through"

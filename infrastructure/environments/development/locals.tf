@@ -79,6 +79,9 @@ locals {
     "${local.name_prefix}-lakehouse-workflow"
   )
   goal_4_denied_service_principal_name = "${local.name_prefix}-denied-test"
+  goal_6_doris_external_read_service_principal_name = (
+    "${local.name_prefix}-doris-external-read"
+  )
 
   tags = merge({
     Project            = var.project

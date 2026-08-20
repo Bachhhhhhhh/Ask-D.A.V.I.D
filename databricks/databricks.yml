@@ -4,6 +4,7 @@ bundle:
 include:
   - bundles/goal_04_lakehouse/resources.yml
   - bundles/goal_05_ingestion/resources.yml
+  - bundles/goal_06_doris/resources.yml
 
 variables:
   warehouse_id:
@@ -34,6 +35,8 @@ variables:
   goal5_cdc_contract_version:
     description: Reviewed CDC contract version.
     default: "1.0"
+  goal6_increment_source_uri:
+    description: Terraform-derived neutral Goal 6 increment CSV URI.
 
 run_as:
   service_principal_name: ${var.workflow_service_principal_application_id}
@@ -52,6 +55,7 @@ sync:
   include:
     - sql/goal_04/*.sql
     - sql/goal_05/*.sql
+    - sql/goal_06/*.sql
   exclude:
     - sql/goal_04/remediation/**
 

@@ -1,0 +1,85 @@
+#!/usr/bin/env sh
+set -eu
+
+for required in DORIS_FE_HOST DORIS_QUERY_SECRET; do
+  eval "test -n \"\${$required:-}\""
+done
+
+query_user="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.username')"
+query_password="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.password')"
+started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+started_seconds="$(date +%s)"
+session_result="$(MYSQL_PWD="$query_password" mysql --ssl --protocol=TCP \
+  --host="$DORIS_FE_HOST" --port=9030 --user="$query_user" --batch --skip-column-names <<'SQL'
+SET workload_group = 'goal6_readonly';
+SELECT
+  DATE_FORMAT(metric_date, '%Y-%m-%d'),
+  category,
+  event_count,
+  metric_total,
+  source_table,
+  DATE_FORMAT(source_transformed_at, '%Y-%m-%dT%H:%i:%sZ'),
+  DATE_FORMAT(refreshed_at, '%Y-%m-%dT%H:%i:%sZ')
+FROM ask_david_serving_development.serving_metric_daily
+ORDER BY metric_date, category
+LIMIT 1;
+SELECT LAST_QUERY_ID();
+SELECT COUNT(*), DATE_FORMAT(MAX(refreshed_at), '%Y-%m-%dT%H:%i:%sZ')
+FROM ask_david_serving_development.serving_metric_daily;
+SQL
+)"
+
+if [ "$(printf '%s\n' "$session_result" | wc -l | tr -d ' ')" -ne 3 ]; then
+  echo '{"goal":"goal-06","operation":"readonly-verify","status":"invalid-result-contract"}' >&2
+  exit 1
+fi
+representative_row="$(printf '%s\n' "$session_result" | sed -n '1p')"
+query_id="$(printf '%s\n' "$session_result" | sed -n '2p')"
+summary_row="$(printf '%s\n' "$session_result" | sed -n '3p')"
+
+metric_date="$(printf '%s\n' "$representative_row" | cut -f1)"
+category="$(printf '%s\n' "$representative_row" | cut -f2)"
+event_count="$(printf '%s\n' "$representative_row" | cut -f3)"
+metric_total="$(printf '%s\n' "$representative_row" | cut -f4)"
+source_table="$(printf '%s\n' "$representative_row" | cut -f5)"
+source_transformed_at="$(printf '%s\n' "$representative_row" | cut -f6)"
+representative_refreshed_at="$(printf '%s\n' "$representative_row" | cut -f7)"
+row_count="$(printf '%s\n' "$summary_row" | cut -f1)"
+refresh="$(printf '%s\n' "$summary_row" | cut -f2)"
+
+case "$event_count:$metric_total:$row_count" in
+  *[!0-9.:]*|:*|*::*|*:)
+    echo '{"goal":"goal-06","operation":"readonly-verify","status":"invalid-numeric-result"}' >&2
+    exit 1
+    ;;
+esac
+if [ -z "$metric_date" ] || [ -z "$category" ] || [ -z "$source_table" ] || \
+   [ -z "$source_transformed_at" ] || [ -z "$representative_refreshed_at" ] || \
+   [ -z "$query_id" ] || [ -z "$refresh" ]; then
+  echo '{"goal":"goal-06","operation":"readonly-verify","status":"incomplete-result-contract"}' >&2
+  exit 1
+fi
+if [ "$source_table" != 'ask_david_development.green_sm_business.goal5_structured_business_metrics' ]; then
+  echo '{"goal":"goal-06","operation":"readonly-verify","status":"unexpected-source-dataset"}' >&2
+  exit 1
+fi
+
+query_result="$(jq -cn \
+  --arg metric_date "$metric_date" \
+  --arg category "$category" \
+  --argjson event_count "$event_count" \
+  --argjson metric_total "$metric_total" \
+  --arg source_table "$source_table" \
+  --arg source_transformed_at "$source_transformed_at" \
+  --arg refreshed_at "$representative_refreshed_at" \
+  '{metric_date:$metric_date,category:$category,event_count:$event_count,metric_total:$metric_total,source_table:$source_table,source_transformed_at:$source_transformed_at,refreshed_at:$refreshed_at}')"
+duration_seconds="$(( $(date +%s) - started_seconds ))"
+jq -cn \
+  --arg source_dataset 'ask_david_development.green_sm_business.goal5_structured_business_metrics' \
+  --arg started_at "$started_at" \
+  --arg refresh_timestamp "$refresh" \
+  --arg query_id "$query_id" \
+  --argjson query_result "$query_result" \
+  --argjson row_count "$row_count" \
+  --argjson duration_seconds "$duration_seconds" \
+  '{goal:"goal-06",operation:"readonly-verify",status:"completed",query_result:$query_result,source_dataset:$source_dataset,refresh_timestamp:$refresh_timestamp,executed_query_id:$query_id,row_count:$row_count,execution_duration:$duration_seconds,started_at:$started_at}'

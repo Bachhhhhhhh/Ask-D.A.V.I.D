@@ -118,6 +118,14 @@ resource "databricks_grants" "catalog" {
     privileges = ["USE_CATALOG"]
   }
 
+  dynamic "grant" {
+    for_each = var.doris_external_read_enabled ? [1] : []
+    content {
+      principal  = var.doris_external_read_service_principal_application_id
+      privileges = ["USE_CATALOG"]
+    }
+  }
+
   grant {
     principal  = var.business_reader_group_name
     privileges = ["USE_CATALOG"]
@@ -145,5 +153,27 @@ resource "databricks_grants" "schemas" {
       principal  = var.business_reader_group_name
       privileges = ["SELECT", "USE_SCHEMA"]
     }
+  }
+
+  dynamic "grant" {
+    for_each = (
+      each.key == "green_sm_business" &&
+      var.doris_external_read_enabled
+    ) ? [1] : []
+    content {
+      principal  = var.doris_external_read_service_principal_application_id
+      privileges = ["EXTERNAL_USE_SCHEMA", "USE_SCHEMA"]
+    }
+  }
+}
+
+resource "databricks_grants" "doris_source_table" {
+  count = var.enabled && var.doris_external_read_enabled ? 1 : 0
+
+  table = "${databricks_catalog.this[0].name}.green_sm_business.${var.doris_source_table_name}"
+
+  grant {
+    principal  = var.doris_external_read_service_principal_application_id
+    privileges = ["SELECT"]
   }
 }

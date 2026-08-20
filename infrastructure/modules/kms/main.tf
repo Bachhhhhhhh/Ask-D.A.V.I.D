@@ -1,8 +1,10 @@
 locals {
-  observability_log_group_arns = [
+  observability_log_group_arns = concat([
     "arn:aws:logs:${var.region}:${var.account_id}:log-group:/${var.name_prefix}/runtime",
     "arn:aws:logs:${var.region}:${var.account_id}:log-group:/${var.name_prefix}/vpc-flow",
-  ]
+    ], var.goal_6_enabled ? [
+    "arn:aws:logs:${var.region}:${var.account_id}:log-group:/${var.name_prefix}/doris",
+  ] : [])
   rds_cpu_alarm_arn = "arn:aws:cloudwatch:${var.region}:${var.account_id}:alarm:${var.name_prefix}-rds-cpu-high"
 
   storage_key_policy = var.storage_access_role_arn == null ? null : jsonencode({

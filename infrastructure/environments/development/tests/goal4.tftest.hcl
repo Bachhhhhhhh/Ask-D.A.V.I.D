@@ -77,6 +77,8 @@ variables {
   databricks_workspace_id               = 1234567890123456
   databricks_metastore_id               = "11111111-1111-1111-1111-111111111111"
   databricks_governance_admin_user_name = "governance-admin@example.invalid"
+  goal_6_enabled                        = false
+  goal_6_verifier_tasks_enabled         = false
 }
 
 run "goal4_disabled_has_no_managed_root_markers" {

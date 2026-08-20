@@ -1,0 +1,115 @@
+#!/usr/bin/env sh
+set -eu
+
+for required in DORIS_FE_HOST DORIS_QUERY_SECRET; do
+  eval "test -n \"\${$required:-}\""
+done
+
+query_user="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.username')"
+query_password="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.password')"
+error_file="$(mktemp)"
+trap 'rm -f "$error_file"' EXIT
+
+mysql_query() {
+  MYSQL_PWD="$query_password" mysql --ssl --protocol=TCP \
+    --host="$DORIS_FE_HOST" --port=9030 --user="$query_user" "$@"
+}
+
+row_count="$(mysql_query --batch --skip-column-names \
+  -e 'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;')"
+case "$row_count" in
+  ''|*[!0-9]*)
+    printf '%s\n' '{"goal":"goal-06","operation":"rbac-verify","status":"positive-select-failed"}' >&2
+    exit 1
+    ;;
+esac
+
+grants="$(mysql_query --batch --skip-column-names -e 'SHOW GRANTS;')"
+printf '%s\n' "$grants" | grep -Fqi 'Select_priv' || {
+  printf '%s\n' '{"goal":"goal-06","operation":"rbac-verify","status":"select-grant-missing"}' >&2
+  exit 1
+}
+if printf '%s\n' "$grants" | grep -Eqi 'Admin_priv|Node_priv|Load_priv|Alter_priv|Create_priv|Drop_priv'; then
+  printf '%s\n' '{"goal":"goal-06","operation":"rbac-verify","status":"unexpected-write-or-admin-grant"}' >&2
+  exit 1
+fi
+
+assert_permission_denied() {
+  label="$1"
+  statement="$2"
+  : > "$error_file"
+  if mysql_query -e "$statement" >/dev/null 2>"$error_file"; then
+    printf '{"goal":"goal-06","operation":"rbac-verify","status":"unexpected-allow","statement_class":"%s"}\n' "$label" >&2
+    exit 1
+  fi
+  # Doris denial messages vary by statement type and server release.  Accept
+  # only an explicit authorization phrase or a canonical Doris privilege token
+  # (for example LOAD_PRIV); never treat a generic SQL/runtime failure as RBAC
+  # evidence.  Emit a classified, non-sensitive signal rather than raw stderr.
+  if grep -Eqi '(^|[^[:alnum:]_])[[:alnum:]_]+_priv([^[:alnum:]_]|$)' "$error_file"; then
+    denial_evidence="doris_privilege_token"
+  elif grep -Eqi 'access denied|permission denied|not authorized|not allowed to (execute|perform|access)|privilege|denied' "$error_file"; then
+    denial_evidence="authorization_text"
+  else
+    printf '{"goal":"goal-06","operation":"rbac-verify","status":"wrong-rejection-layer","statement_class":"%s"}\n' "$label" >&2
+    exit 1
+  fi
+  printf '{"goal":"goal-06","operation":"rbac-verify","status":"denied","statement_class":"%s","denial_evidence":"%s"}\n' "$label" "$denial_evidence"
+}
+
+# All DML probes are deterministic no-op statements even if a privilege were
+# accidentally broadened. Doris 4.0.1 can optimize both a constant-false
+# DELETE and a scan of an entirely empty partition before its LOAD_PRIV check.
+# DELETE therefore uses absent key 127 between two admin-seeded sentinels.
+# Fail closed unless the query-only identity proves both sentinels exist and
+# the target has no row. This forces a non-empty probe partition while an
+# unexpectedly permitted DELETE still affects zero rows.
+# DDL targets only the disposable authorization probe; CREATE uses a
+# session-scoped temporary table.
+assert_permission_denied insert "INSERT INTO ask_david_serving_development.goal6_authorization_probe SELECT 1, 'goal6' WHERE FALSE"
+assert_permission_denied update "UPDATE ask_david_serving_development.goal6_authorization_probe SET marker = marker WHERE FALSE"
+delete_lower_sentinel_id=126
+delete_probe_id=127
+delete_upper_sentinel_id=128
+delete_probe_count_for() {
+  mysql_query --batch --skip-column-names \
+    -e "SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = $1;"
+}
+
+delete_probe_guard_failed() {
+  printf '{"goal":"goal-06","operation":"rbac-verify","status":"delete-probe-precondition-failed","reason":"%s"}\n' "$1" >&2
+  exit 1
+}
+
+: > "$error_file"
+if ! delete_lower_sentinel_count="$(delete_probe_count_for "$delete_lower_sentinel_id" 2>"$error_file")" ||
+  ! delete_probe_count="$(delete_probe_count_for "$delete_probe_id" 2>"$error_file")" ||
+  ! delete_upper_sentinel_count="$(delete_probe_count_for "$delete_upper_sentinel_id" 2>"$error_file")"; then
+  delete_probe_guard_failed "query-failed"
+fi
+
+case "$delete_lower_sentinel_count:$delete_probe_count:$delete_upper_sentinel_count" in
+  1:0:1) ;;
+  *[!0-9:]*|*::*|:*|*:)
+    delete_probe_guard_failed "invalid-count"
+    ;;
+  *)
+    case "$delete_lower_sentinel_count" in
+      1) ;;
+      *) delete_probe_guard_failed "lower-sentinel-missing" ;;
+    esac
+    case "$delete_upper_sentinel_count" in
+      1) ;;
+      *) delete_probe_guard_failed "upper-sentinel-missing" ;;
+    esac
+    delete_probe_guard_failed "reserved-key-not-empty"
+    ;;
+esac
+printf '%s\n' '{"goal":"goal-06","operation":"rbac-verify","status":"delete-probe-guard","lower_sentinel_present":true,"target_absent":true,"upper_sentinel_present":true}'
+assert_permission_denied delete "DELETE FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = ${delete_probe_id}"
+assert_permission_denied create "CREATE TEMPORARY TABLE ask_david_serving_development.goal6_forbidden_create_probe (probe_id INT) ENGINE=OLAP DUPLICATE KEY(probe_id) DISTRIBUTED BY HASH(probe_id) BUCKETS 1 PROPERTIES ('replication_num' = '1')"
+assert_permission_denied alter "ALTER TABLE ask_david_serving_development.goal6_authorization_probe MODIFY COLUMN marker VARCHAR(65)"
+assert_permission_denied drop "DROP TABLE ask_david_serving_development.goal6_authorization_probe"
+assert_permission_denied unauthorized_database "SELECT COUNT(*) FROM internal.__internal_schema.audit_log"
+
+printf '{"goal":"goal-06","operation":"rbac-verify","status":"completed","positive_select_row_count":%s,"denied_statement_classes":["insert","update","delete","create","alter","drop","unauthorized_database"]}\n' "$row_count"

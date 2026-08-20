@@ -1,0 +1,2 @@
+event_id,entity_id,event_time,category,metric_value
+goal6-event-001,goal6-entity-001,2026-08-13T12:00:00Z,synthetic-serving-increment,42.0

@@ -40,3 +40,15 @@ output "goal_4_workflow_service_principal_application_id" {
 output "goal_4_denied_service_principal_application_id" {
   value = module.databricks_identities.denied_service_principal_application_id
 }
+output "goal_6_doris_fe_private_ip" { value = module.doris_serving.fe_private_ip }
+output "goal_6_doris_be_private_ip" { value = module.doris_serving.be_private_ip }
+output "goal_6_doris_log_group_name" { value = module.doris_serving.log_group_name }
+output "goal_6_doris_admin_task_definition_arn" {
+  value = module.doris_verifier.admin_task_definition_arn
+}
+output "goal_6_doris_verifier_task_definition_arn" {
+  value = module.doris_verifier.verifier_task_definition_arn
+}
+output "goal_6_doris_external_read_service_principal_application_id" {
+  value = module.databricks_identities.doris_external_read_service_principal_application_id
+}

@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+# This command is packaged for a separately approved destructive rebuild task.
+# It has no arguments and can drop only the internal Doris serving database.
+for required in DORIS_FE_HOST DORIS_ADMIN_SECRET; do
+  eval "test -n \"\${$required:-}\""
+done
+
+admin_user="$(printf '%s' "$DORIS_ADMIN_SECRET" | jq -er '.username')"
+admin_password="$(printf '%s' "$DORIS_ADMIN_SECRET" | jq -er '.password')"
+MYSQL_PWD="$admin_password" mysql --ssl --protocol=TCP \
+  --host="$DORIS_FE_HOST" --port=9030 --user="$admin_user" \
+  < /app/doris/migrations/03_rebuild_internal_serving.sql
+printf '%s\n' '{"goal":"goal-06","operation":"rebuild-serving","status":"completed"}'

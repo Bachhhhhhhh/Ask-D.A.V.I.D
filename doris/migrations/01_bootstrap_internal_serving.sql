@@ -1,0 +1,8 @@
+-- Migration manifest: the private Terraform-owned admin task executes the
+-- versioned files in this order over TLS. `SOURCE` is deliberately not used:
+-- it is a client command, not portable Doris SQL.
+--
+-- 1. doris/schemas/01_serving_database.sql
+-- 2. doris/migrations/04_recreate_authorization_probe.sql
+-- 3. doris/schemas/02_readonly_workload_and_audit.sql
+-- 4. doris/materialized_views/01_serving_data_freshness.sql

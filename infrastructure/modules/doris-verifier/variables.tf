@@ -1,0 +1,17 @@
+variable "enabled" { type = bool }
+variable "task_definitions_enabled" { type = bool }
+variable "name_prefix" { type = string }
+variable "region" { type = string }
+variable "vpc_id" { type = string }
+variable "fe_security_group_id" { type = string }
+variable "fe_private_ip" { type = string }
+variable "be_private_ip" { type = string }
+variable "databricks_workspace_host" { type = string }
+variable "doris_log_group_name" { type = string }
+variable "doris_log_group_arn" { type = string }
+variable "execution_role_arn" { type = string }
+variable "admin_secret_arn" { type = string }
+variable "oauth_secret_arn" { type = string }
+variable "query_secret_arn" { type = string }
+variable "image" { type = string }
+variable "tags" { type = map(string) }

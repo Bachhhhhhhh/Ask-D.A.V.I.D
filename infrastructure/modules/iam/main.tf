@@ -37,6 +37,30 @@ resource "aws_iam_role_policy_attachment" "task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_iam_role_policy" "task_execution_goal6_secrets" {
+  count = length(var.goal6_secret_arns) > 0 ? 1 : 0
+
+  name = "read-goal6-secret-containers"
+  role = aws_iam_role.task_execution.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ReadExactGoal6SecretContainers"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = var.goal6_secret_arns
+      },
+      {
+        Sid      = "DecryptGoal6SecretKey"
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = var.goal6_secrets_kms_key_arn
+      },
+    ]
+  })
+}
+
 resource "aws_iam_role" "workload" {
   name               = "${var.name_prefix}-ecs-workload"
   assume_role_policy = local.ecs_tasks_assume_role

@@ -281,7 +281,9 @@ def validate_goal5_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         if "s3:PutObject" in source_read_statement:
             errors.append("Goal 5 source IAM permission must remain read-only")
 
-    for path in (resource_path, terraform_path, bundle_root):
+    # The bundle root is intentionally shared by later approved goals. Keep
+    # Goal 5 scope protection on its own manifest and Terraform source only.
+    for path in (resource_path, terraform_path):
         if path.is_file() and FORBIDDEN_SCOPE.search(path.read_text(encoding="utf-8")):
             errors.append(f"Goal 5 configuration contains deferred/future scope: {path.name}")
 

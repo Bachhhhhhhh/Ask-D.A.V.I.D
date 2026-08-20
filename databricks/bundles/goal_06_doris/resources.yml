@@ -1,0 +1,32 @@
+resources:
+  jobs:
+    goal6_apply_controlled_increment:
+      name: ask-david-development-goal6-controlled-increment
+      description: Applies one neutral synthetic increment through existing governed Goal 5 Raw to Curated to Business tables.
+      max_concurrent_runs: 1
+      queue:
+        enabled: false
+      tags:
+        data_classification: synthetic-only
+        environment: development
+        goal: goal-06
+      tasks:
+        - task_key: apply_controlled_increment
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_06/01_apply_controlled_increment.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              increment_source_uri: ${var.goal6_increment_source_uri}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: verify_controlled_increment
+          depends_on:
+            - task_key: apply_controlled_increment
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_06/02_verify_controlled_increment.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}

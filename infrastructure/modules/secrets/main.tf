@@ -1,4 +1,9 @@
-locals { containers = toset(["runtime/config", "data-services/config", "opensearch/foundation"]) }
+locals {
+  containers = setunion(
+    toset(["runtime/config", "data-services/config", "opensearch/foundation"]),
+    var.additional_containers,
+  )
+}
 resource "aws_secretsmanager_secret" "this" {
   for_each                = local.containers
   name                    = "${var.name_prefix}/${each.key}"

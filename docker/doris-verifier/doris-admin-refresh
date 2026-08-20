@@ -1,0 +1,123 @@
+#!/usr/bin/env sh
+set -eu
+
+# Credentials are injected by ECS secrets and never echoed. This fixed runner
+# accepts no external arguments and can create only a temporary UC REST catalog.
+for required in DORIS_FE_HOST DORIS_BE_HOST DATABRICKS_WORKSPACE_HOST DORIS_ADMIN_SECRET DORIS_QUERY_SECRET DATABRICKS_OAUTH_SECRET; do
+  eval "test -n \"\${$required:-}\""
+done
+
+# Terraform injects the approved workspace as an HTTPS origin. Normalize one
+# optional trailing slash and reject every other form before composing OAuth or
+# Unity Catalog REST URLs. In particular, never construct https://https://… .
+workspace_origin="${DATABRICKS_WORKSPACE_HOST%/}"
+if ! printf '%s' "$workspace_origin" | grep -Eq '^https://[A-Za-z0-9][A-Za-z0-9.-]*\.cloud\.databricks\.com$'; then
+  printf '%s\n' '{"goal":"goal-06","operation":"admin-refresh","status":"invalid-workspace-origin"}' >&2
+  exit 1
+fi
+
+admin_user="$(printf '%s' "$DORIS_ADMIN_SECRET" | jq -er '.username')"
+admin_password="$(printf '%s' "$DORIS_ADMIN_SECRET" | jq -er '.password')"
+query_user="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.username')"
+query_password="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.password')"
+oauth_client_id="$(printf '%s' "$DATABRICKS_OAUTH_SECRET" | jq -er '.client_id')"
+oauth_client_secret="$(printf '%s' "$DATABRICKS_OAUTH_SECRET" | jq -er '.client_secret')"
+source_table='ask_david_development.green_sm_business.goal5_structured_business_metrics'
+
+mysql_admin() {
+  MYSQL_PWD="$admin_password" mysql --ssl --protocol=TCP \
+    --host="$DORIS_FE_HOST" --port=9030 --user="$admin_user" "$@"
+}
+
+run_sql_file() {
+  mysql_admin < "$1"
+}
+
+for attempt in $(seq 1 60); do
+  if mysql --ssl --protocol=TCP --host="$DORIS_FE_HOST" --port=9030 --user=root -e 'SELECT 1' >/dev/null 2>&1; then
+    break
+  fi
+  sleep 5
+done
+
+# Bootstrap is idempotent after root has created the restricted named account.
+# The generated passwords exclude SQL quoting characters by Terraform contract.
+mysql --ssl --protocol=TCP --host="$DORIS_FE_HOST" --port=9030 --user=root <<SQL
+CREATE USER IF NOT EXISTS '$admin_user'@'%' IDENTIFIED BY '$admin_password';
+GRANT ADMIN_PRIV ON *.*.* TO '$admin_user'@'%';
+SQL
+if ! mysql_admin -N -e 'SHOW BACKENDS;' | grep -Fq "$DORIS_BE_HOST"; then
+  mysql_admin -e "ALTER SYSTEM ADD BACKEND '$DORIS_BE_HOST:9050';"
+fi
+mysql_admin <<SQL
+CREATE USER IF NOT EXISTS '$query_user'@'%' IDENTIFIED BY '$query_password';
+SQL
+
+# The migration manifest is deliberately executed by this runner so its
+# ordering is deterministic and independent of a client-specific SOURCE command.
+run_sql_file /app/doris/schemas/01_serving_database.sql
+run_sql_file /app/doris/migrations/04_recreate_authorization_probe.sql
+run_sql_file /app/doris/schemas/02_readonly_workload_and_audit.sql
+audit_plugin_output=""
+if ! audit_plugin_output="$(mysql_admin --batch --skip-column-names \
+  -e "SHOW VARIABLES LIKE 'enable_audit_plugin';" 2>/dev/null)"; then
+  printf '%s\n' '{"goal":"goal-06","operation":"admin-refresh","status":"audit-plugin-unreadable"}' >&2
+  exit 1
+fi
+audit_plugin_state="$(printf '%s\n' "$audit_plugin_output" \
+  | awk -F '\t' '$1 == "enable_audit_plugin" {print $2}')"
+case "$audit_plugin_state" in
+  1|true|TRUE|on|ON) ;;
+  *)
+    printf '%s\n' '{"goal":"goal-06","operation":"admin-refresh","status":"audit-plugin-disabled"}' >&2
+    exit 1
+    ;;
+esac
+run_sql_file /app/doris/materialized_views/01_serving_data_freshness.sql
+mysql_admin <<SQL
+GRANT SELECT_PRIV ON ask_david_serving_development.* TO '$query_user'@'%';
+GRANT USAGE_PRIV ON WORKLOAD GROUP 'goal6_readonly' TO '$query_user'@'%';
+SET PROPERTY FOR '$query_user' 'default_workload_group' = 'goal6_readonly';
+SET PROPERTY FOR '$query_user' 'query_timeout' = '30';
+SQL
+
+access_token="$(curl --fail --silent --show-error \
+  --request POST "$workspace_origin/oidc/v1/token" \
+  --user "$oauth_client_id:$oauth_client_secret" \
+  --data-urlencode 'grant_type=client_credentials' \
+  --data-urlencode 'scope=all-apis' | jq -er '.access_token')"
+catalog_name="goal6_unity_catalog_refresh"
+case "$source_table" in
+  ask_david_development.green_sm_business.goal5_structured_business_metrics) ;;
+  *)
+    printf '%s\n' '{"goal":"goal-06","operation":"admin-refresh","status":"source-not-allowlisted"}' >&2
+    exit 1
+    ;;
+esac
+catalog_sql="$(mktemp)"
+trap 'rm -f "$catalog_sql"; MYSQL_PWD="$admin_password" mysql --ssl --protocol=TCP --host="$DORIS_FE_HOST" --port=9030 --user="$admin_user" -e "DROP CATALOG IF EXISTS $catalog_name;" >/dev/null 2>&1 || true' EXIT
+chmod 0600 "$catalog_sql"
+cat > "$catalog_sql" <<SQL
+CREATE CATALOG IF NOT EXISTS $catalog_name PROPERTIES (
+  'type' = 'iceberg',
+  'iceberg.catalog.type' = 'rest',
+  'iceberg.rest.uri' = '$workspace_origin/api/2.1/unity-catalog/iceberg-rest/',
+  'warehouse' = 'ask_david_development',
+  'iceberg.rest.security.type' = 'oauth2',
+  'iceberg.rest.oauth2.token' = '$access_token',
+  'iceberg.rest.vended-credentials-enabled' = 'true',
+  's3.endpoint' = 'https://s3.ap-southeast-1.amazonaws.com',
+  's3.region' = 'ap-southeast-1'
+);
+SQL
+mysql_admin < "$catalog_sql"
+refresh_sql="$(mktemp)"
+chmod 0600 "$refresh_sql"
+sed "s/\${TEMPORARY_ICEBERG_CATALOG}/$catalog_name/g" \
+  /app/doris/migrations/02_refresh_from_unity_catalog.sql.tmpl > "$refresh_sql"
+mysql_admin < "$refresh_sql"
+rm -f "$refresh_sql"
+mysql_admin -e "DROP CATALOG IF EXISTS $catalog_name;"
+trap - EXIT
+rm -f "$catalog_sql"
+printf '%s\n' '{"goal":"goal-06","operation":"admin-refresh","status":"completed"}'

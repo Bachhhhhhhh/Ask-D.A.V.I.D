@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+set -eu
+
+for required in DORIS_FE_HOST DORIS_QUERY_SECRET; do
+  eval "test -n \"\${$required:-}\""
+done
+
+query_user="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.username')"
+query_password="$(printf '%s' "$DORIS_QUERY_SECRET" | jq -er '.password')"
+error_file="$(mktemp)"
+trap 'rm -f "$error_file"' EXIT
+
+mysql_query() {
+  MYSQL_PWD="$query_password" mysql --ssl --protocol=TCP \
+    --host="$DORIS_FE_HOST" --port=9030 --user="$query_user" "$@"
+}
+
+property_value="$(mysql_query --batch --skip-column-names \
+  -e "SHOW PROPERTY LIKE 'query_timeout';" | awk -F '\t' '$1 == "query_timeout" {print $2}')"
+if [ "$property_value" != "30" ]; then
+  printf '%s\n' '{"goal":"goal-06","operation":"query-limit-verify","status":"query-timeout-property-mismatch"}' >&2
+  exit 1
+fi
+
+started_seconds="$(date +%s)"
+if MYSQL_PWD="$query_password" timeout 40 mysql --ssl --protocol=TCP \
+  --host="$DORIS_FE_HOST" --port=9030 --user="$query_user" \
+  -e 'SELECT SLEEP(31);' >/dev/null 2>"$error_file"; then
+  printf '%s\n' '{"goal":"goal-06","operation":"query-limit-verify","status":"timeout-not-enforced"}' >&2
+  exit 1
+fi
+duration_seconds="$(( $(date +%s) - started_seconds ))"
+if [ "$duration_seconds" -lt 25 ] || [ "$duration_seconds" -gt 40 ]; then
+  printf '%s\n' '{"goal":"goal-06","operation":"query-limit-verify","status":"unexpected-enforcement-duration"}' >&2
+  exit 1
+fi
+if ! grep -Eqi 'timeout|timed out|cancelled|canceled' "$error_file"; then
+  printf '%s\n' '{"goal":"goal-06","operation":"query-limit-verify","status":"wrong-enforcement-layer"}' >&2
+  exit 1
+fi
+
+printf '{"goal":"goal-06","operation":"query-limit-verify","status":"completed","configured_query_timeout_seconds":30,"probe_sleep_seconds":31,"execution_duration_seconds":%s,"enforcement":"timeout"}\n' "$duration_seconds"

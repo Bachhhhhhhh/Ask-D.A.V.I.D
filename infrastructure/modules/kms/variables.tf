@@ -17,3 +17,9 @@ variable "storage_access_role_arn" {
   default     = null
   nullable    = true
 }
+
+variable "goal_6_enabled" {
+  description = "Include the exact Goal 6 Doris CloudWatch log group in the observability key policy."
+  type        = bool
+  default     = false
+}

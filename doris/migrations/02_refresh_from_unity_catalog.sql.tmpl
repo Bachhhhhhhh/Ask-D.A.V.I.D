@@ -1,0 +1,25 @@
+-- Temporary catalog name is supplied only at runtime and must be dropped after.
+-- This controlled full replacement affects only the rebuildable Doris copy.
+TRUNCATE TABLE ask_david_serving_development.serving_metric_daily;
+
+INSERT INTO ask_david_serving_development.serving_metric_daily
+SELECT
+  metric_date,
+  category,
+  event_count,
+  metric_total,
+  'ask_david_development.green_sm_business.goal5_structured_business_metrics',
+  transformed_at,
+  CURRENT_TIMESTAMP()
+FROM ${TEMPORARY_ICEBERG_CATALOG}.green_sm_business.goal5_structured_business_metrics;
+
+INSERT INTO ask_david_serving_development.serving_refresh_state
+SELECT
+  'goal6_business_metrics_refresh',
+  'ask_david_development.green_sm_business.goal5_structured_business_metrics',
+  MAX(source_transformed_at),
+  CURRENT_TIMESTAMP(),
+  'SUCCESS',
+  COUNT(*),
+  'Controlled full refresh from the single allowlisted Business table'
+FROM ask_david_serving_development.serving_metric_daily;
