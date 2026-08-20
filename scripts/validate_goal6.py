@@ -1,5 +1,9 @@
 """Offline static validation for the Goal 6 Apache Doris serving contract."""
 
+# Exact SQL, shell, and Terraform marker strings intentionally exceed the
+# Python line length while preserving the source contracts verbatim.
+# ruff: noqa: E501
+
 from __future__ import annotations
 
 import argparse
@@ -97,19 +101,11 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     refresh_ddl = sources["doris/migrations/02_refresh_from_unity_catalog.sql.tmpl"]
     rebuild_ddl = sources["doris/migrations/03_rebuild_internal_serving.sql"]
     admin_task_wrapper = sources["infrastructure/scripts/run-goal6-admin-refresh.ps1"]
-    admin_task_shell_wrapper = sources[
-        "infrastructure/scripts/run-goal6-admin-refresh.sh"
-    ]
-    admin_operation_shell_wrapper = sources[
-        "infrastructure/scripts/run-goal6-admin-operation.sh"
-    ]
-    verifier_task_shell_wrapper = sources[
-        "infrastructure/scripts/run-goal6-verifier.sh"
-    ]
+    admin_task_shell_wrapper = sources["infrastructure/scripts/run-goal6-admin-refresh.sh"]
+    admin_operation_shell_wrapper = sources["infrastructure/scripts/run-goal6-admin-operation.sh"]
+    verifier_task_shell_wrapper = sources["infrastructure/scripts/run-goal6-verifier.sh"]
     health_task_wrapper = sources["infrastructure/scripts/run-goal6-fe-health.ps1"]
-    readiness_marker_wrapper = sources[
-        "infrastructure/scripts/run-goal6-readiness-markers.ps1"
-    ]
+    readiness_marker_wrapper = sources["infrastructure/scripts/run-goal6-readiness-markers.ps1"]
     readiness_marker_shell_wrapper = sources[
         "infrastructure/scripts/run-goal6-readiness-markers.sh"
     ]
@@ -195,7 +191,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "associate_public_ip_address = false",
         'server_side_encryption = "aws:kms"',
         "goal6_increment.csv",
-        ):
+    ):
         if marker not in goal6_tf + serving:
             errors.append(
                 f"Goal 6 Terraform is missing required private/synthetic control: {marker}"
@@ -205,7 +201,9 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "be_private_ip             = var.goal_6_be_private_ip",
     ):
         if marker not in goal6_tf:
-            errors.append(f"Goal 6 environment wiring is missing Terraform-managed private IP: {marker}")
+            errors.append(
+                f"Goal 6 environment wiring is missing Terraform-managed private IP: {marker}"
+            )
     if "0.0.0.0/0" in serving and not re.search(r"from_port\s*=\s*443", serving):
         errors.append("Goal 6 may use public CIDR only for outbound HTTPS, never ingress")
     if re.search(r"aws_vpc_security_group_ingress_rule[\\s\\S]{0,500}cidr_ipv4", serving):
@@ -235,16 +233,14 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         'resource "aws_vpc_security_group_ingress_rule" "be_to_fe_rpc"',
         'resource "aws_vpc_security_group_egress_rule" "be_to_fe_rpc"',
         'resource "aws_vpc_security_group_egress_rule" "fe_to_be"',
-        'referenced_security_group_id = aws_security_group.fe[0].id',
-        'referenced_security_group_id = aws_security_group.be[0].id',
-        'from_port                    = 9030',
-        'from_port                    = 9020',
+        "referenced_security_group_id = aws_security_group.fe[0].id",
+        "referenced_security_group_id = aws_security_group.be[0].id",
+        "from_port                    = 9030",
+        "from_port                    = 9020",
         'toset(["8040", "9050", "9060", "8060"])',
     ):
         if marker not in serving:
-            errors.append(
-                f"Goal 6 is missing a private bidirectional Doris cluster rule: {marker}"
-            )
+            errors.append(f"Goal 6 is missing a private bidirectional Doris cluster rule: {marker}")
     if 'metadata_options { http_tokens = "required" }' not in serving:
         errors.append("Goal 6 EC2 instances must require IMDSv2")
     if "encrypted         = true" not in serving or 'type              = "gp3"' not in serving:
@@ -255,7 +251,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "var.enabled && var.rebuild_serving_state",
         "frontend-metadata-rebuild",
         "backend-serving-data-rebuild",
-        "StateRecovery = \"explicit-goal6-rebuild\"",
+        'StateRecovery = "explicit-goal6-rebuild"',
         "prevent_destroy = true",
         "var.rebuild_serving_state ? aws_ebs_volume.fe_data_rebuild[0].id",
         "var.rebuild_serving_state ? aws_ebs_volume.be_data_rebuild[0].id",
@@ -282,7 +278,9 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         if marker not in serving:
             errors.append(f"Goal 6 EC2 bootstrap remediation is missing {marker}")
     if serving.count("user_data_replace_on_change = true") != 2:
-        errors.append("Goal 6 listener remediation must force reviewed FE and BE bootstrap replacements")
+        errors.append(
+            "Goal 6 listener remediation must force reviewed FE and BE bootstrap replacements"
+        )
     if serving.count(']) : ""') < 4:
         errors.append("Goal 6 disabled mode must skip all four FE/BE bootstrap template renders")
     host_template = _read(
@@ -314,9 +312,9 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "bootstrap-invoked",
         "bootstrap-failed",
         "goal6_on_exit",
-        'trap \'goal6_on_exit "$?"\' EXIT',
+        "trap 'goal6_on_exit \"$?\"' EXIT",
         'cat "$ROOT_BOOTSTRAP_LOG" >> "$BOOTSTRAP_STATUS_FILE"',
-        "BOOTSTRAP_STATUS_FILE=\"$MOUNT_PATH/$ROLE-log/bootstrap-status.log\"",
+        'BOOTSTRAP_STATUS_FILE="$MOUNT_PATH/$ROLE-log/bootstrap-status.log"',
         "emit_status",
         "bootstrap-started",
         "container-exited",
@@ -325,11 +323,11 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "host-prerequisites-ready",
         "host-prerequisites-failed",
         "vm.max_map_count = $DORIS_VM_MAX_MAP_COUNT",
-        "sysctl -w \"vm.max_map_count=$DORIS_VM_MAX_MAP_COUNT\"",
+        'sysctl -w "vm.max_map_count=$DORIS_VM_MAX_MAP_COUNT"',
         "LimitNOFILE=$DORIS_NOFILE_LIMIT",
-        "--ulimit \"nofile=$DORIS_NOFILE_LIMIT:$DORIS_NOFILE_LIMIT\"",
-        "CONTAINER_DIAGNOSTICS_FILE=\"$MOUNT_PATH/$ROLE-log/container-diagnostics.log\"",
-        "DOCKER_RUN_OUTPUT_FILE=\"$MOUNT_PATH/$ROLE-log/docker-run.log\"",
+        '--ulimit "nofile=$DORIS_NOFILE_LIMIT:$DORIS_NOFILE_LIMIT"',
+        'CONTAINER_DIAGNOSTICS_FILE="$MOUNT_PATH/$ROLE-log/container-diagnostics.log"',
+        'DOCKER_RUN_OUTPUT_FILE="$MOUNT_PATH/$ROLE-log/docker-run.log"',
         "timeout --foreground --kill-after=10s 120s docker run",
         "DOCKER_RUN_STATUS=",
         '"force_flush_interval": 5',
@@ -339,13 +337,13 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "container-diagnostics.log",
         "docker-run.log",
         "EXPECTED_PRIVATE_IP",
-        "PRIVATE_IP_DIAGNOSTICS_FILE=\"$MOUNT_PATH/$ROLE-log/private-ip-diagnostics.log\"",
+        'PRIVATE_IP_DIAGNOSTICS_FILE="$MOUNT_PATH/$ROLE-log/private-ip-diagnostics.log"',
         'emit_status "private-ip-configured" "$DORIS_PORT"',
         'emit_status "private-ip-mismatch" "$DORIS_PORT"',
         'emit_status "fe-registration-port-waiting" "$FE_REGISTRATION_PORT"',
         'emit_status "fe-registration-port-ready" "$FE_REGISTRATION_PORT"',
         'emit_status "fe-registration-port-unavailable" "$FE_REGISTRATION_PORT"',
-        "FE_REGISTRATION_READY=\"false\"",
+        'FE_REGISTRATION_READY="false"',
         "for _ in $(seq 1 120)",
         "timeout 2 bash -c",
         "docker inspect --format",
@@ -393,16 +391,18 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     ):
         if marker not in network_outputs + kms_outputs + iam + iam_variables:
             errors.append(f"Goal 6 ECS secret-injection remediation is missing {marker}")
-    if 'Resource = var.goal6_secret_arns' not in iam:
+    if "Resource = var.goal6_secret_arns" not in iam:
         errors.append("Goal 6 execution-role secret access must use exact secret ARN inputs")
-    if 'Resource = var.goal6_secrets_kms_key_arn' not in iam:
+    if "Resource = var.goal6_secrets_kms_key_arn" not in iam:
         errors.append("Goal 6 execution-role KMS access must use the exact secrets key ARN")
     if "secretsmanager:*" in iam or 'Action   = ["kms:*"]' in iam:
-        errors.append("Goal 6 execution-role remediation must not grant wildcard secret/KMS actions")
+        errors.append(
+            "Goal 6 execution-role remediation must not grant wildcard secret/KMS actions"
+        )
     for marker in (
-        'module.network.aws_endpoints_security_group_id',
-        'module.doris_verifier.admin_security_group_id',
-        'module.doris_verifier.verifier_security_group_id',
+        "module.network.aws_endpoints_security_group_id",
+        "module.doris_verifier.admin_security_group_id",
+        "module.doris_verifier.verifier_security_group_id",
         'resource "aws_vpc_security_group_ingress_rule" "goal6_admin_to_aws_endpoints"',
         'resource "aws_vpc_security_group_ingress_rule" "goal6_verifier_to_aws_endpoints"',
         'description                  = "Goal 6 admin task access to existing private AWS interface endpoints only."',
@@ -411,19 +411,25 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         if marker not in goal6_tf:
             errors.append(f"Goal 6 private endpoint remediation is missing {marker}")
     if "cidr_ipv4" in goal6_tf:
-        errors.append("Goal 6 interface-endpoint remediation must use SG references, never CIDR ingress")
-    if goal6_tf.count('_to_aws_endpoints"') != 2 or goal6_tf.count(
-        "security_group_id            = module.network.aws_endpoints_security_group_id"
-    ) != 2:
+        errors.append(
+            "Goal 6 interface-endpoint remediation must use SG references, never CIDR ingress"
+        )
+    if (
+        goal6_tf.count('_to_aws_endpoints"') != 2
+        or goal6_tf.count(
+            "security_group_id            = module.network.aws_endpoints_security_group_id"
+        )
+        != 2
+    ):
         errors.append(
             "Goal 6 interface-endpoint remediation must contain exactly the admin and verifier SG-to-endpoint rules"
         )
     for marker in (
-        'goal6_secret_arns = var.goal_6_enabled ? [',
+        "goal6_secret_arns = var.goal_6_enabled ? [",
         'module.secrets.secret_arns["doris/admin"]',
         'module.secrets.secret_arns["doris/external-read-oauth"]',
         'module.secrets.secret_arns["doris/query"]',
-        'goal6_secrets_kms_key_arn = var.goal_6_enabled ? module.kms.secrets_key_arn : null',
+        "goal6_secrets_kms_key_arn = var.goal_6_enabled ? module.kms.secrets_key_arn : null",
     ):
         if marker not in development_main:
             errors.append(f"Goal 6 execution-role wiring is missing {marker}")
@@ -491,7 +497,10 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
             errors.append(f"Goal 6 controlled serving refresh is missing {marker}")
     if "ask_david_serving_development" not in rebuild_ddl or "green_sm_" in rebuild_ddl:
         errors.append("Goal 6 rebuild may drop only internal serving objects")
-    if "goal6_authorization_probe" not in serving_ddl or "goal6_authorization_probe" not in rebuild_ddl:
+    if (
+        "goal6_authorization_probe" not in serving_ddl
+        or "goal6_authorization_probe" not in rebuild_ddl
+    ):
         errors.append(
             "Goal 6 disposable authorization probe must be created and removed with serving state"
         )
@@ -518,9 +527,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "depends_on:",
     ):
         if marker not in bundle:
-            errors.append(
-                f"Goal 6 controlled increment job is missing execution guard: {marker}"
-            )
+            errors.append(f"Goal 6 controlled increment job is missing execution guard: {marker}")
     if "goal6.synthetic.serving.increment" not in increment_sql:
         errors.append("Goal 6 increment SQL must identify only its neutral synthetic dataset")
     for marker in (
@@ -583,7 +590,9 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
             if marker not in runner:
                 errors.append(f"Goal 6 runner must fail closed and require TLS: {relative}")
         if "--ssl-mode" in runner:
-            errors.append(f"Goal 6 runner must use the MariaDB TLS option, not --ssl-mode: {relative}")
+            errors.append(
+                f"Goal 6 runner must use the MariaDB TLS option, not --ssl-mode: {relative}"
+            )
     admin_runner = sources["docker/doris-verifier/doris-admin-refresh"]
     for marker in (
         "iceberg.rest.vended-credentials-enabled",
@@ -600,7 +609,9 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         '"status":"invalid-workspace-origin"',
     ):
         if marker not in admin_runner:
-            errors.append(f"Goal 6 admin runner must normalize and validate workspace origin: {marker}")
+            errors.append(
+                f"Goal 6 admin runner must normalize and validate workspace origin: {marker}"
+            )
     if "https://$DATABRICKS_WORKSPACE_HOST" in admin_runner:
         errors.append("Goal 6 admin runner must not prepend HTTPS to an HTTPS workspace origin")
     if "GRANT ADMIN_PRIV ON *.*.* TO '$admin_user'@'%';" not in admin_runner:
@@ -751,7 +762,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     for marker in (
         "Set-StrictMode -Version Latest",
         "ConfirmGoal6AdminRefresh",
-        'if ($Region -ne \"ap-southeast-1\")',
+        'if ($Region -ne "ap-southeast-1")',
         "aws sts get-caller-identity",
         "aws ecs describe-task-definition",
         "ExpectedRevision",
@@ -772,7 +783,10 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
             errors.append(f"Goal 6 admin task wrapper must not perform {forbidden} operations")
     if "securityGroups=[$AdminSecurityGroupId]" not in admin_task_wrapper:
         errors.append("Goal 6 admin task wrapper must pass only the approved admin security group")
-    if "ApplicationSubnetIds" not in admin_task_wrapper or "privateSubnetId" not in admin_task_wrapper:
+    if (
+        "ApplicationSubnetIds" not in admin_task_wrapper
+        or "privateSubnetId" not in admin_task_wrapper
+    ):
         errors.append("Goal 6 admin task wrapper must constrain and report private subnet evidence")
 
     for marker in (
@@ -794,7 +808,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "aws ecs run-task",
         "aws ecs wait tasks-stopped",
         "aws logs get-log-events",
-        'operation:\"admin-refresh\"',
+        'operation:"admin-refresh"',
         'cloudWatchCompletionStatus:"completed"',
         "no retry is performed",
     ):
@@ -815,7 +829,10 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
             )
     if re.search(r"(?m)^\s*databricks\s", admin_task_shell_wrapper, re.IGNORECASE):
         errors.append("Goal 6 admin task shell wrapper must not invoke Databricks CLI")
-    if "application_subnet_ids" not in admin_task_shell_wrapper or "subnet_id" not in admin_task_shell_wrapper:
+    if (
+        "application_subnet_ids" not in admin_task_shell_wrapper
+        or "subnet_id" not in admin_task_shell_wrapper
+    ):
         errors.append(
             "Goal 6 admin task shell wrapper must constrain and report private subnet evidence"
         )
@@ -823,9 +840,9 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     for marker in (
         "--confirm-goal6-verifier",
         '[[ "$region" == "ap-southeast-1" ]]',
-        'readonly)',
-        'rbac)',
-        'query-limit)',
+        "readonly)",
+        "rbac)",
+        "query-limit)",
         "/app/doris-readonly-verify",
         "/app/doris-rbac-verify",
         "/app/doris-query-limit-verify",
@@ -841,14 +858,11 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "--overrides",
         "aws ecs wait tasks-stopped",
         "aws logs get-log-events",
-        'operationEvidence:$operation_evidence',
+        "operationEvidence:$operation_evidence",
         "no retry is performed",
     ):
         if marker not in verifier_task_shell_wrapper:
-            errors.append(
-                "Goal 6 verifier shell wrapper is missing fail-closed control: "
-                f"{marker}"
-            )
+            errors.append(f"Goal 6 verifier shell wrapper is missing fail-closed control: {marker}")
     for forbidden in (
         "terraform",
         "get-secret-value",
@@ -858,9 +872,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "DATABRICKS_OAUTH_SECRET",
     ):
         if forbidden.lower() in verifier_task_shell_wrapper.lower():
-            errors.append(
-                f"Goal 6 verifier shell wrapper must not perform or receive {forbidden}"
-            )
+            errors.append(f"Goal 6 verifier shell wrapper must not perform or receive {forbidden}")
     if re.search(r"(?m)^\s*databricks\s", verifier_task_shell_wrapper, re.IGNORECASE):
         errors.append("Goal 6 verifier shell wrapper must not invoke Databricks CLI")
     if (
@@ -875,8 +887,8 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "--confirm-goal6-rebuild",
         "--confirm-goal6-audit",
         '[[ "$region" == "ap-southeast-1" ]]',
-        'rebuild)',
-        'audit)',
+        "rebuild)",
+        "audit)",
         "/app/doris-rebuild-serving",
         "/app/doris-audit-verify",
         "EXPECTED_QUERY_ID",
@@ -894,13 +906,12 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "--overrides",
         "aws ecs wait tasks-stopped",
         "aws logs get-log-events",
-        'operationEvidence:$operation_evidence',
+        "operationEvidence:$operation_evidence",
         "no retry is performed",
     ):
         if marker not in admin_operation_shell_wrapper:
             errors.append(
-                "Goal 6 admin-operation shell wrapper is missing fail-closed "
-                f"control: {marker}"
+                f"Goal 6 admin-operation shell wrapper is missing fail-closed control: {marker}"
             )
     for forbidden in (
         "terraform",
@@ -909,9 +920,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "aws s3",
     ):
         if forbidden.lower() in admin_operation_shell_wrapper.lower():
-            errors.append(
-                f"Goal 6 admin-operation shell wrapper must not perform {forbidden}"
-            )
+            errors.append(f"Goal 6 admin-operation shell wrapper must not perform {forbidden}")
     if re.search(r"(?m)^\s*databricks\s", admin_operation_shell_wrapper, re.IGNORECASE):
         errors.append("Goal 6 admin-operation shell wrapper must not invoke Databricks CLI")
     if (
@@ -924,14 +933,14 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
 
     for marker in (
         "ConfirmGoal6FeHealth",
-        'if ($Region -ne \"ap-southeast-1\")',
+        'if ($Region -ne "ap-southeast-1")',
         "ExpectedFeHost",
         "aws sts get-caller-identity",
         "aws ecs describe-task-definition",
         "ExpectedRevision",
         "ExpectedImage",
         "assignPublicIp=DISABLED",
-        'command = @(\"-c\", $healthCommand)',
+        'command = @("-c", $healthCommand)',
         "$null -ne $container.entryPoint",
         "mysqladmin --ssl --protocol=TCP",
         "aws ecs run-task",
@@ -941,7 +950,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "aws logs get-log-events",
         "mysqld is alive",
         "Access denied for user",
-        "cloudWatchHealthStatus = \"listener-reachable\"",
+        'cloudWatchHealthStatus = "listener-reachable"',
         "No retry is performed",
     ):
         if marker not in health_task_wrapper:
@@ -949,11 +958,16 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     for forbidden in ("terraform", "databricks", "get-secret-value", "s3 cp", "aws s3", "mysql -e"):
         if forbidden.lower() in health_task_wrapper.lower():
             errors.append(f"Goal 6 FE health wrapper must not perform {forbidden} operations")
-    if 'command = @(\"/bin/sh\", \"-c\", $healthCommand)' in health_task_wrapper:
+    if 'command = @("/bin/sh", "-c", $healthCommand)' in health_task_wrapper:
         errors.append("Goal 6 FE health wrapper must not duplicate the /bin/sh entrypoint")
     if "securityGroups=[$VerifierSecurityGroupId]" not in health_task_wrapper:
-        errors.append("Goal 6 FE health wrapper must pass only the approved verifier security group")
-    if "ApplicationSubnetIds" not in health_task_wrapper or "privateSubnetId" not in health_task_wrapper:
+        errors.append(
+            "Goal 6 FE health wrapper must pass only the approved verifier security group"
+        )
+    if (
+        "ApplicationSubnetIds" not in health_task_wrapper
+        or "privateSubnetId" not in health_task_wrapper
+    ):
         errors.append("Goal 6 FE health wrapper must constrain and report private subnet evidence")
 
     for marker in (
@@ -1003,7 +1017,9 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     if 'command = @("/bin/sh", "-c", $markerCommand)' in readiness_marker_wrapper:
         errors.append("Goal 6 readiness-marker wrapper must not duplicate the /bin/sh entrypoint")
     if "securityGroups=[$AdminSecurityGroupId]" not in readiness_marker_wrapper:
-        errors.append("Goal 6 readiness-marker wrapper must pass only the approved admin security group")
+        errors.append(
+            "Goal 6 readiness-marker wrapper must pass only the approved admin security group"
+        )
     if (
         "ApplicationSubnetIds" not in readiness_marker_wrapper
         or "privateSubnetId" not in readiness_marker_wrapper
@@ -1063,7 +1079,10 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         errors.append(
             "Goal 6 readiness-marker shell wrapper must pass only the approved admin security group"
         )
-    if "application_subnet_ids" not in readiness_marker_shell_wrapper or "subnet_id" not in readiness_marker_shell_wrapper:
+    if (
+        "application_subnet_ids" not in readiness_marker_shell_wrapper
+        or "subnet_id" not in readiness_marker_shell_wrapper
+    ):
         errors.append(
             "Goal 6 readiness-marker shell wrapper must constrain and report private subnet evidence"
         )

@@ -47,7 +47,7 @@ module "doris_verifier" {
   fe_security_group_id      = module.doris_serving.fe_security_group_id
   fe_private_ip             = module.doris_serving.fe_private_ip
   be_private_ip             = module.doris_serving.be_private_ip
-  databricks_workspace_host = trimsuffix(var.databricks_workspace_host, "/")
+  databricks_workspace_host = trimsuffix(coalesce(var.databricks_workspace_host, ""), "/")
   doris_log_group_name      = module.doris_serving.log_group_name
   doris_log_group_arn       = module.doris_serving.log_group_arn
   execution_role_arn        = module.iam.task_execution_role_arn
