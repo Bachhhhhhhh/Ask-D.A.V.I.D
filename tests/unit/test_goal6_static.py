@@ -1,5 +1,8 @@
 """Static Goal 6 repository-scope tests."""
 
+# Embedded shell fixtures intentionally preserve exact long command strings.
+# ruff: noqa: E501
+
 import json
 import os
 import re
@@ -69,9 +72,7 @@ def test_goal6_bootstrap_recovery_uses_adequate_root_storage_and_replaces_hosts(
     variables = (ROOT / "infrastructure/environments/development/goal6_variables.tf").read_text(
         encoding="utf-8"
     )
-    wiring = (ROOT / "infrastructure/environments/development/goal6.tf").read_text(
-        encoding="utf-8"
-    )
+    wiring = (ROOT / "infrastructure/environments/development/goal6.tf").read_text(encoding="utf-8")
 
     assert "volume_size = var.fe_root_volume_gib" in source
     assert "volume_size = var.be_root_volume_gib" in source
@@ -116,9 +117,7 @@ def test_goal6_serving_state_rebuild_is_explicit_and_preserves_old_volumes() -> 
         encoding="utf-8"
     )
     source = (ROOT / "infrastructure/modules/doris-serving/main.tf").read_text(encoding="utf-8")
-    wiring = (ROOT / "infrastructure/environments/development/goal6.tf").read_text(
-        encoding="utf-8"
-    )
+    wiring = (ROOT / "infrastructure/environments/development/goal6.tf").read_text(encoding="utf-8")
 
     assert 'variable "goal_6_rebuild_serving_state"' in variables
     assert "default     = false" in variables
@@ -129,7 +128,7 @@ def test_goal6_serving_state_rebuild_is_explicit_and_preserves_old_volumes() -> 
     assert "var.enabled && var.rebuild_serving_state" in source
     assert "frontend-metadata-rebuild" in source
     assert "backend-serving-data-rebuild" in source
-    assert "StateRecovery = \"explicit-goal6-rebuild\"" in source
+    assert 'StateRecovery = "explicit-goal6-rebuild"' in source
     assert "var.rebuild_serving_state ? aws_ebs_volume.fe_data_rebuild[0].id" in source
     assert "var.rebuild_serving_state ? aws_ebs_volume.be_data_rebuild[0].id" in source
 
@@ -140,7 +139,7 @@ def test_goal6_doris_docker_bootstrap_supplies_discovery_and_listener_guards() -
         ROOT / "infrastructure/modules/doris-serving/templates/doris-host.sh.tftpl"
     ).read_text(encoding="utf-8")
 
-    assert 'fe_private_ip       = var.fe_private_ip' in source
+    assert "fe_private_ip       = var.fe_private_ip" in source
     assert "FE_SERVERS" in template
     assert "FE_ID=1" in template
     assert "BE_ADDR" in template
@@ -166,16 +165,16 @@ def test_goal6_doris_docker_bootstrap_supplies_discovery_and_listener_guards() -
     assert 'local redacted_log_lines="0"' in template
     assert 'local log_signal="none"' in template
     assert 'log_signal\\":\\"$log_signal' in template
-    assert "log_signal=\"bind\"" in template
-    assert "log_signal=\"metadata\"" in template
-    assert "log_signal=\"configuration\"" in template
-    assert "log_signal=\"exception\"" in template
+    assert 'log_signal="bind"' in template
+    assert 'log_signal="metadata"' in template
+    assert 'log_signal="configuration"' in template
+    assert 'log_signal="exception"' in template
     assert 'emit_container_diagnostic_summary "starting"' in template
     assert 'emit_container_diagnostic_summary "unavailable"' in template
     assert 'emit_container_diagnostic_summary "ready"' in template
     assert 'emit_status "doris-port-ready" "$DORIS_PORT"' in template
     assert 'emit_status "doris-port-unavailable" "$DORIS_PORT"' in template
-    assert 'storage_root_path = /opt/apache-doris/be/storage,medium:hdd' in template
+    assert "storage_root_path = /opt/apache-doris/be/storage,medium:hdd" in template
     assert 'install -d -m 0750 "$MOUNT_PATH/be-storage"' in template
     assert 'emit_status "be-storage-root-writable" "$DORIS_PORT"' in template
     assert 'emit_status "be-storage-root-unavailable" "$DORIS_PORT"' in template
@@ -186,10 +185,7 @@ def test_goal6_doris_docker_bootstrap_supplies_discovery_and_listener_guards() -
     assert 'docker exec "$CONTAINER_ID" sh -ec' in template
     assert 'emit_status "fe-registration-port-waiting" "$FE_REGISTRATION_PORT"' in template
     assert 'emit_status "fe-registration-port-ready" "$FE_REGISTRATION_PORT"' in template
-    assert (
-        'emit_status "fe-registration-port-unavailable" "$FE_REGISTRATION_PORT"'
-        in template
-    )
+    assert 'emit_status "fe-registration-port-unavailable" "$FE_REGISTRATION_PORT"' in template
     assert 'FE_REGISTRATION_READY="false"' in template
     assert "for _ in $(seq 1 120)" in template
     assert "timeout 2 bash -c" in template
@@ -206,12 +202,14 @@ def test_goal6_doris_docker_bootstrap_supplies_discovery_and_listener_guards() -
     assert 'private-ip-diagnostics.log",' in template
     assert 'container-diagnostics.log",' in template
     assert 'docker-run.log",' in template
-    assert 'fe_custom.conf:/opt/apache-doris/fe/conf/fe_custom.conf:ro' in template
-    assert 'be_custom.conf:/opt/apache-doris/be/conf/be_custom.conf:ro' in template
+    assert "fe_custom.conf:/opt/apache-doris/fe/conf/fe_custom.conf:ro" in template
+    assert "be_custom.conf:/opt/apache-doris/be/conf/be_custom.conf:ro" in template
     assert "docker inspect --format" in template
     assert "docker logs --tail 200" in template
     assert "EXPECTED_PRIVATE_IP" in template
-    assert 'PRIVATE_IP_DIAGNOSTICS_FILE="$MOUNT_PATH/$ROLE-log/private-ip-diagnostics.log"' in template
+    assert (
+        'PRIVATE_IP_DIAGNOSTICS_FILE="$MOUNT_PATH/$ROLE-log/private-ip-diagnostics.log"' in template
+    )
 
 
 def test_goal6_be_storage_readiness_requires_real_usable_capacity() -> None:
@@ -219,7 +217,7 @@ def test_goal6_be_storage_readiness_requires_real_usable_capacity() -> None:
         ROOT / "infrastructure/modules/doris-serving/templates/doris-host.sh.tftpl"
     ).read_text(encoding="utf-8")
 
-    assert 'storage_root_path = /opt/apache-doris/be/storage,medium:hdd' in template
+    assert "storage_root_path = /opt/apache-doris/be/storage,medium:hdd" in template
     assert 'install -d -m 0750 "$MOUNT_PATH/be-storage"' in template
     assert 'docker exec "$CONTAINER_ID" sh -ec' in template
     assert "SHOW BACKENDS;" in template
@@ -248,32 +246,32 @@ def test_goal6_trivy_exception_is_scoped_to_https_egress_only() -> None:
 
 
 def test_goal6_private_cluster_rules_cover_initiated_traffic_both_directions() -> None:
-    source = (ROOT / "infrastructure/modules/doris-serving/main.tf").read_text(
-        encoding="utf-8"
-    )
+    source = (ROOT / "infrastructure/modules/doris-serving/main.tf").read_text(encoding="utf-8")
 
-    assert (
-        'resource "aws_vpc_security_group_ingress_rule" "be_to_fe_registration"'
-        in source
-    )
-    assert (
-        'resource "aws_vpc_security_group_egress_rule" "be_to_fe_registration"'
-        in source
-    )
+    assert 'resource "aws_vpc_security_group_ingress_rule" "be_to_fe_registration"' in source
+    assert 'resource "aws_vpc_security_group_egress_rule" "be_to_fe_registration"' in source
     assert 'resource "aws_vpc_security_group_ingress_rule" "be_to_fe_rpc"' in source
     assert 'resource "aws_vpc_security_group_egress_rule" "be_to_fe_rpc"' in source
     assert 'resource "aws_vpc_security_group_egress_rule" "fe_to_be"' in source
     assert source.count('toset(["8040", "9050", "9060", "8060"])') == 2
-    assert source.count(
-        'description                  = "Documented Doris FE-to-BE membership traffic."'
-    ) == 2
-    assert source.count('description                  = "Private Doris BE callbacks to the FE RPC listener."') == 2
-    assert source.count('from_port                    = 9030') >= 2
-    assert source.count('from_port                    = 9020') == 2
-    assert source.count('to_port                      = 9020') == 2
-    assert 'AuditLoader sends an HTTP stream-load batch' in source
-    assert source.count('referenced_security_group_id = aws_security_group.fe[0].id') >= 2
-    assert source.count('referenced_security_group_id = aws_security_group.be[0].id') >= 4
+    assert (
+        source.count(
+            'description                  = "Documented Doris FE-to-BE membership traffic."'
+        )
+        == 2
+    )
+    assert (
+        source.count(
+            'description                  = "Private Doris BE callbacks to the FE RPC listener."'
+        )
+        == 2
+    )
+    assert source.count("from_port                    = 9030") >= 2
+    assert source.count("from_port                    = 9020") == 2
+    assert source.count("to_port                      = 9020") == 2
+    assert "AuditLoader sends an HTTP stream-load batch" in source
+    assert source.count("referenced_security_group_id = aws_security_group.fe[0].id") >= 2
+    assert source.count("referenced_security_group_id = aws_security_group.be[0].id") >= 4
 
 
 def test_goal6_verifier_tasks_are_gated_until_the_private_ecr_digest_exists() -> None:
@@ -386,18 +384,16 @@ def test_goal6_refresh_rebuild_and_verifier_are_separated() -> None:
 
 
 def test_goal6_controlled_increment_is_idempotent_governed_and_doris_independent() -> None:
-    bundle = (
-        ROOT / "databricks/bundles/goal_06_doris/resources.yml"
-    ).read_text(encoding="utf-8")
-    increment = (
-        ROOT / "databricks/sql/goal_06/01_apply_controlled_increment.sql"
-    ).read_text(encoding="utf-8")
-    verify = (
-        ROOT / "databricks/sql/goal_06/02_verify_controlled_increment.sql"
-    ).read_text(encoding="utf-8")
-    fixture = (
-        ROOT / "synthetic_data/goal_06/structured/goal6_increment.csv"
-    ).read_text(encoding="utf-8")
+    bundle = (ROOT / "databricks/bundles/goal_06_doris/resources.yml").read_text(encoding="utf-8")
+    increment = (ROOT / "databricks/sql/goal_06/01_apply_controlled_increment.sql").read_text(
+        encoding="utf-8"
+    )
+    verify = (ROOT / "databricks/sql/goal_06/02_verify_controlled_increment.sql").read_text(
+        encoding="utf-8"
+    )
+    fixture = (ROOT / "synthetic_data/goal_06/structured/goal6_increment.csv").read_text(
+        encoding="utf-8"
+    )
 
     assert "max_concurrent_runs: 1" in bundle
     assert "queue:\n        enabled: false" in bundle
@@ -416,13 +412,11 @@ def test_goal6_controlled_increment_is_idempotent_governed_and_doris_independent
         in increment
     )
     assert (
-        "target.dataset_id = source.dataset_id AND target.event_id = source.event_id"
-        in increment
+        "target.dataset_id = source.dataset_id AND target.event_id = source.event_id" in increment
     )
     assert (
         "target.dataset_id = source.dataset_id AND target.metric_date = source.metric_date "
-        "AND target.category = source.category"
-        in increment
+        "AND target.category = source.category" in increment
     )
     executable_sql = "\n".join(
         line
@@ -517,14 +511,15 @@ def test_goal6_rbac_runner_uses_safe_disposable_negative_probes() -> None:
     rebuild = (ROOT / "doris/migrations/03_rebuild_internal_serving.sql").read_text(
         encoding="utf-8"
     )
-    runner = (ROOT / "docker/doris-verifier/doris-rbac-verify").read_text(
-        encoding="utf-8"
-    )
+    runner = (ROOT / "docker/doris-verifier/doris-rbac-verify").read_text(encoding="utf-8")
 
     assert "goal6_authorization_probe" in schema
     assert "goal6_authorization_probe" in rebuild
     assert "probe_id SMALLINT NOT NULL" in schema
-    assert "DROP TABLE IF EXISTS ask_david_serving_development.goal6_authorization_probe;" in probe_migration
+    assert (
+        "DROP TABLE IF EXISTS ask_david_serving_development.goal6_authorization_probe;"
+        in probe_migration
+    )
     assert "probe_id SMALLINT NOT NULL" in probe_migration
     assert "(126, 'goal6_guard_lower')" in probe_migration
     assert "(128, 'goal6_guard_upper')" in probe_migration
@@ -562,9 +557,7 @@ def test_goal6_rbac_runner_uses_safe_disposable_negative_probes() -> None:
 
 
 def test_goal6_query_limit_runner_is_bounded_and_read_only() -> None:
-    runner = (ROOT / "docker/doris-verifier/doris-query-limit-verify").read_text(
-        encoding="utf-8"
-    )
+    runner = (ROOT / "docker/doris-verifier/doris-query-limit-verify").read_text(encoding="utf-8")
 
     assert "SHOW PROPERTY LIKE" in runner
     assert "SHOW PROPERTY FOR" not in runner
@@ -577,9 +570,7 @@ def test_goal6_query_limit_runner_is_bounded_and_read_only() -> None:
 
 
 def test_goal6_audit_runner_matches_query_identity_target_state_and_workload() -> None:
-    runner = (ROOT / "docker/doris-verifier/doris-audit-verify").read_text(
-        encoding="utf-8"
-    )
+    runner = (ROOT / "docker/doris-verifier/doris-audit-verify").read_text(encoding="utf-8")
 
     assert "EXPECTED_QUERY_ID" in runner
     assert "SHOW VARIABLES LIKE 'enable_audit_plugin'" in runner
@@ -614,7 +605,7 @@ def test_goal6_rbac_runner_accepts_only_permission_denials(tmp_path: Path) -> No
     fake_mysql = tmp_path / "mysql"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "case \"$*\" in\n"
+        'case "$*" in\n'
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;'*) printf '2\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 126;'*) printf '1\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127;'*) printf '0\\n'; exit 0 ;;\n"
@@ -653,7 +644,9 @@ def test_goal6_rbac_runner_accepts_only_permission_denials(tmp_path: Path) -> No
         "target_absent": True,
         "upper_sentinel_present": True,
     }
-    assert {event["denial_evidence"] for event in events if event["status"] == "denied"} == {"authorization_text"}
+    assert {event["denial_evidence"] for event in events if event["status"] == "denied"} == {
+        "authorization_text"
+    }
     assert events[-1]["status"] == "completed"
     assert events[-1]["positive_select_row_count"] == 2
     assert events[-1]["denied_statement_classes"] == [
@@ -673,7 +666,7 @@ def test_goal6_rbac_runner_accepts_doris_privilege_token_without_raw_error(
     fake_mysql = tmp_path / "mysql"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "case \"$*\" in\n"
+        'case "$*" in\n'
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;'*) printf '2\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 126;'*) printf '1\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127;'*) printf '0\\n'; exit 0 ;;\n"
@@ -703,7 +696,9 @@ def test_goal6_rbac_runner_accepts_doris_privilege_token_without_raw_error(
 
     assert completed.returncode == 0, completed.stderr
     events = [json.loads(line) for line in completed.stdout.splitlines()]
-    assert {event["denial_evidence"] for event in events if event["status"] == "denied"} == {"doris_privilege_token"}
+    assert {event["denial_evidence"] for event in events if event["status"] == "denied"} == {
+        "doris_privilege_token"
+    }
     assert "LOAD_PRIV" not in completed.stdout
     assert "test-only" not in completed.stdout
 
@@ -712,7 +707,7 @@ def test_goal6_rbac_runner_rejects_non_authorization_error(tmp_path: Path) -> No
     fake_mysql = tmp_path / "mysql"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "case \"$*\" in\n"
+        'case "$*" in\n'
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;'*) printf '2\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 126;'*) printf '1\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127;'*) printf '0\\n'; exit 0 ;;\n"
@@ -752,8 +747,8 @@ def test_goal6_rbac_runner_stops_before_delete_when_reserved_key_exists(
     mysql_log = tmp_path / "mysql.log"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "printf '%s\\n' \"$*\" >> \"$GOAL6_TEST_MYSQL_LOG\"\n"
-        "case \"$*\" in\n"
+        'printf \'%s\\n\' "$*" >> "$GOAL6_TEST_MYSQL_LOG"\n'
+        'case "$*" in\n'
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;'*) printf '2\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 126;'*) printf '1\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127;'*) printf '1\\n'; exit 0 ;;\n"
@@ -800,8 +795,8 @@ def test_goal6_rbac_runner_stops_before_delete_when_nonempty_guard_is_missing(
     mysql_log = tmp_path / "mysql.log"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "printf '%s\\n' \"$*\" >> \"$GOAL6_TEST_MYSQL_LOG\"\n"
-        "case \"$*\" in\n"
+        'printf \'%s\\n\' "$*" >> "$GOAL6_TEST_MYSQL_LOG"\n'
+        'case "$*" in\n'
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;'*) printf '2\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 126;'*) printf '0\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127;'*) printf '0\\n'; exit 0 ;;\n"
@@ -845,8 +840,8 @@ def test_goal6_rbac_runner_sanitizes_reserved_key_query_failure(tmp_path: Path) 
     mysql_log = tmp_path / "mysql.log"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "printf '%s\\n' \"$*\" >> \"$GOAL6_TEST_MYSQL_LOG\"\n"
-        "case \"$*\" in\n"
+        'printf \'%s\\n\' "$*" >> "$GOAL6_TEST_MYSQL_LOG"\n'
+        'case "$*" in\n'
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;'*) printf '2\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 126;'*) printf '1\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127;'*) printf 'sensitive connection detail\\n' >&2; exit 1 ;;\n"
@@ -894,8 +889,8 @@ def test_goal6_rbac_runner_fails_closed_if_absent_key_delete_is_allowed(
     mysql_log = tmp_path / "mysql.log"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "printf '%s\\n' \"$*\" >> \"$GOAL6_TEST_MYSQL_LOG\"\n"
-        "case \"$*\" in\n"
+        'printf \'%s\\n\' "$*" >> "$GOAL6_TEST_MYSQL_LOG"\n'
+        'case "$*" in\n'
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.serving_metric_daily;'*) printf '2\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 126;'*) printf '1\\n'; exit 0 ;;\n"
         "  *'SELECT COUNT(*) FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127;'*) printf '0\\n'; exit 0 ;;\n"
@@ -947,10 +942,14 @@ def test_goal6_rbac_runner_fails_closed_if_absent_key_delete_is_allowed(
         "WHERE probe_id = 128;"
     )
     delete = (
-        "DELETE FROM ask_david_serving_development.goal6_authorization_probe "
-        "WHERE probe_id = 127"
+        "DELETE FROM ask_david_serving_development.goal6_authorization_probe WHERE probe_id = 127"
     )
-    assert calls.index(lower_sentinel) < calls.index(target_absence) < calls.index(upper_sentinel) < calls.index(delete)
+    assert (
+        calls.index(lower_sentinel)
+        < calls.index(target_absence)
+        < calls.index(upper_sentinel)
+        < calls.index(delete)
+    )
     assert calls.count(delete) == 1
 
 
@@ -959,23 +958,20 @@ def test_goal6_query_limit_runner_requires_configured_timeout_and_enforcement(
 ) -> None:
     fake_mysql = tmp_path / "mysql"
     fake_mysql.write_text(
-        "#!/bin/sh\n"
-        "printf 'query_timeout\\t30\\n'\n",
+        "#!/bin/sh\nprintf 'query_timeout\\t30\\n'\n",
         encoding="utf-8",
     )
     fake_mysql.chmod(0o755)
     fake_timeout = tmp_path / "timeout"
     fake_timeout.write_text(
-        "#!/bin/sh\n"
-        "printf 'ERROR 1105: query timeout exceeded\\n' >&2\n"
-        "exit 1\n",
+        "#!/bin/sh\nprintf 'ERROR 1105: query timeout exceeded\\n' >&2\nexit 1\n",
         encoding="utf-8",
     )
     fake_timeout.chmod(0o755)
     fake_date = tmp_path / "date"
     fake_date.write_text(
         "#!/bin/sh\n"
-        "state=\"$GOAL6_FAKE_DATE_STATE\"\n"
+        'state="$GOAL6_FAKE_DATE_STATE"\n'
         "if [ -f \"$state\" ]; then printf '130\\n'; else : > \"$state\"; printf '100\\n'; fi\n",
         encoding="utf-8",
     )
@@ -1016,7 +1012,7 @@ def test_goal6_audit_runner_emits_only_sanitized_contract(tmp_path: Path) -> Non
     fake_mysql = tmp_path / "mysql"
     fake_mysql.write_text(
         "#!/bin/sh\n"
-        "case \"$*\" in\n"
+        'case "$*" in\n'
         "  *\"SHOW VARIABLES LIKE 'enable_audit_plugin'\"*) printf 'enable_audit_plugin\\ttrue\\n' ;;\n"
         "  *\"SELECT COUNT(*) FROM internal.__internal_schema.audit_log;\"*) printf '1\\n' ;;\n"
         f"  *) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' '{query_id}' true EOF 17 true true ;;\n"
@@ -1071,13 +1067,13 @@ def test_goal6_audit_runner_distinguishes_plugin_and_log_preconditions(tmp_path:
         fake_mysql = tmp_path / f"mysql-{mode}"
         fake_mysql.write_text(
             "#!/bin/sh\n"
-            "case \"$*\" in\n"
+            'case "$*" in\n'
             "  *enable_audit_plugin*)\n"
-            f"    [ \"$AUDIT_TEST_MODE\" = disabled ] && printf 'enable_audit_plugin\\tfalse\\n' && exit 0\n"
+            "    [ \"$AUDIT_TEST_MODE\" = disabled ] && printf 'enable_audit_plugin\\tfalse\\n' && exit 0\n"
             "    printf 'enable_audit_plugin\\ttrue\\n' ;;\n"
             "  *audit_log*)\n"
-            f"    [ \"$AUDIT_TEST_MODE\" = unreadable ] && exit 1\n"
-            f"    [ \"$AUDIT_TEST_MODE\" = empty ] && printf '0\\n' && exit 0\n"
+            '    [ "$AUDIT_TEST_MODE" = unreadable ] && exit 1\n'
+            "    [ \"$AUDIT_TEST_MODE\" = empty ] && printf '0\\n' && exit 0\n"
             "    printf '1\\n' ;;\n"
             "  *) printf 'unexpected\\n' ;;\n"
             "esac\n",
@@ -1109,9 +1105,9 @@ def test_goal6_audit_runner_distinguishes_plugin_and_log_preconditions(tmp_path:
 
 
 def test_goal6_admin_task_wrapper_is_private_revision_and_digest_bound() -> None:
-    wrapper = (
-        ROOT / "infrastructure/scripts/run-goal6-admin-refresh.ps1"
-    ).read_text(encoding="utf-8")
+    wrapper = (ROOT / "infrastructure/scripts/run-goal6-admin-refresh.ps1").read_text(
+        encoding="utf-8"
+    )
 
     assert "ConfirmGoal6AdminRefresh" in wrapper
     assert 'if ($Region -ne "ap-southeast-1")' in wrapper
@@ -1132,9 +1128,9 @@ def test_goal6_admin_task_wrapper_is_private_revision_and_digest_bound() -> None
 
 
 def test_goal6_admin_task_shell_wrapper_is_runnable_private_and_fail_closed() -> None:
-    wrapper = (
-        ROOT / "infrastructure/scripts/run-goal6-admin-refresh.sh"
-    ).read_text(encoding="utf-8")
+    wrapper = (ROOT / "infrastructure/scripts/run-goal6-admin-refresh.sh").read_text(
+        encoding="utf-8"
+    )
 
     assert wrapper.startswith("#!/usr/bin/env bash\nset -euo pipefail")
     assert "--confirm-goal6-admin-refresh" in wrapper
@@ -1154,7 +1150,7 @@ def test_goal6_admin_task_shell_wrapper_is_runnable_private_and_fail_closed() ->
     assert "securityGroups=[$admin_security_group_id]" in wrapper
     assert "aws ecs wait tasks-stopped" in wrapper
     assert "aws logs get-log-events" in wrapper
-    assert 'operation:\"admin-refresh\"' in wrapper
+    assert 'operation:"admin-refresh"' in wrapper
     assert 'cloudWatchCompletionStatus:"completed"' in wrapper
     assert "no retry is performed" in wrapper
     for forbidden in (
@@ -1169,16 +1165,14 @@ def test_goal6_admin_task_shell_wrapper_is_runnable_private_and_fail_closed() ->
 
 
 def test_goal6_verifier_shell_wrapper_is_private_allowlisted_and_fail_closed() -> None:
-    wrapper = (
-        ROOT / "infrastructure/scripts/run-goal6-verifier.sh"
-    ).read_text(encoding="utf-8")
+    wrapper = (ROOT / "infrastructure/scripts/run-goal6-verifier.sh").read_text(encoding="utf-8")
 
     assert wrapper.startswith("#!/usr/bin/env bash\nset -euo pipefail")
     assert "--confirm-goal6-verifier" in wrapper
     assert '[[ "$region" == "ap-southeast-1" ]]' in wrapper
-    assert 'readonly)' in wrapper
-    assert 'rbac)' in wrapper
-    assert 'query-limit)' in wrapper
+    assert "readonly)" in wrapper
+    assert "rbac)" in wrapper
+    assert "query-limit)" in wrapper
     assert "/app/doris-readonly-verify" in wrapper
     assert "/app/doris-rbac-verify" in wrapper
     assert "/app/doris-query-limit-verify" in wrapper
@@ -1197,7 +1191,7 @@ def test_goal6_verifier_shell_wrapper_is_private_allowlisted_and_fail_closed() -
     assert "--overrides" in wrapper
     assert "aws ecs wait tasks-stopped" in wrapper
     assert "aws logs get-log-events" in wrapper
-    assert 'operationEvidence:$operation_evidence' in wrapper
+    assert "operationEvidence:$operation_evidence" in wrapper
     assert "no retry is performed" in wrapper
     for forbidden in (
         "terraform",
@@ -1210,15 +1204,15 @@ def test_goal6_verifier_shell_wrapper_is_private_allowlisted_and_fail_closed() -
 
 
 def test_goal6_admin_operation_wrapper_separates_rebuild_and_audit_approval() -> None:
-    wrapper = (
-        ROOT / "infrastructure/scripts/run-goal6-admin-operation.sh"
-    ).read_text(encoding="utf-8")
+    wrapper = (ROOT / "infrastructure/scripts/run-goal6-admin-operation.sh").read_text(
+        encoding="utf-8"
+    )
 
     assert wrapper.startswith("#!/usr/bin/env bash\nset -euo pipefail")
     assert "--confirm-goal6-rebuild" in wrapper
     assert "--confirm-goal6-audit" in wrapper
-    assert 'rebuild)' in wrapper
-    assert 'audit)' in wrapper
+    assert "rebuild)" in wrapper
+    assert "audit)" in wrapper
     assert "/app/doris-rebuild-serving" in wrapper
     assert "/app/doris-audit-verify" in wrapper
     assert "/app/doris-admin-refresh" in wrapper
@@ -1239,7 +1233,7 @@ def test_goal6_admin_operation_wrapper_separates_rebuild_and_audit_approval() ->
     assert "--overrides" in wrapper
     assert "aws ecs wait tasks-stopped" in wrapper
     assert "aws logs get-log-events" in wrapper
-    assert 'operationEvidence:$operation_evidence' in wrapper
+    assert "operationEvidence:$operation_evidence" in wrapper
     assert "no retry is performed" in wrapper
     for forbidden in (
         "terraform",
@@ -1252,9 +1246,7 @@ def test_goal6_admin_operation_wrapper_separates_rebuild_and_audit_approval() ->
 
 
 def test_goal6_fe_health_wrapper_is_private_entrypoint_aware_and_ping_only() -> None:
-    wrapper = (ROOT / "infrastructure/scripts/run-goal6-fe-health.ps1").read_text(
-        encoding="utf-8"
-    )
+    wrapper = (ROOT / "infrastructure/scripts/run-goal6-fe-health.ps1").read_text(encoding="utf-8")
 
     assert "ConfirmGoal6FeHealth" in wrapper
     assert 'if ($Region -ne "ap-southeast-1")' in wrapper
@@ -1284,9 +1276,9 @@ def test_goal6_fe_health_wrapper_is_private_entrypoint_aware_and_ping_only() -> 
 
 
 def test_goal6_readiness_marker_wrapper_is_private_bounded_and_read_only() -> None:
-    wrapper = (
-        ROOT / "infrastructure/scripts/run-goal6-readiness-markers.ps1"
-    ).read_text(encoding="utf-8")
+    wrapper = (ROOT / "infrastructure/scripts/run-goal6-readiness-markers.ps1").read_text(
+        encoding="utf-8"
+    )
 
     assert "ConfirmGoal6ReadinessMarkers" in wrapper
     assert 'if ($Region -ne "ap-southeast-1")' in wrapper
@@ -1329,9 +1321,9 @@ def test_goal6_readiness_marker_wrapper_is_private_bounded_and_read_only() -> No
 
 
 def test_goal6_readiness_marker_shell_wrapper_is_runnable_and_fail_closed() -> None:
-    wrapper = (
-        ROOT / "infrastructure/scripts/run-goal6-readiness-markers.sh"
-    ).read_text(encoding="utf-8")
+    wrapper = (ROOT / "infrastructure/scripts/run-goal6-readiness-markers.sh").read_text(
+        encoding="utf-8"
+    )
 
     assert wrapper.startswith("#!/usr/bin/env bash\nset -euo pipefail")
     assert "--confirm-goal6-readiness-markers" in wrapper
@@ -1380,9 +1372,7 @@ def test_goal6_secret_injection_remediation_is_exact_and_private() -> None:
     kms_outputs = (ROOT / "infrastructure/modules/kms/outputs.tf").read_text(encoding="utf-8")
     iam = (ROOT / "infrastructure/modules/iam/main.tf").read_text(encoding="utf-8")
     iam_variables = (ROOT / "infrastructure/modules/iam/variables.tf").read_text(encoding="utf-8")
-    goal6 = (ROOT / "infrastructure/environments/development/goal6.tf").read_text(
-        encoding="utf-8"
-    )
+    goal6 = (ROOT / "infrastructure/environments/development/goal6.tf").read_text(encoding="utf-8")
     development = (ROOT / "infrastructure/environments/development/main.tf").read_text(
         encoding="utf-8"
     )
@@ -1397,24 +1387,27 @@ def test_goal6_secret_injection_remediation_is_exact_and_private() -> None:
     assert "Resource = var.goal6_secret_arns" in iam
     assert "Resource = var.goal6_secrets_kms_key_arn" in iam
     assert 'resource "aws_vpc_security_group_ingress_rule" "goal6_admin_to_aws_endpoints"' in goal6
-    assert 'resource "aws_vpc_security_group_ingress_rule" "goal6_verifier_to_aws_endpoints"' in goal6
+    assert (
+        'resource "aws_vpc_security_group_ingress_rule" "goal6_verifier_to_aws_endpoints"' in goal6
+    )
     assert goal6.count('_to_aws_endpoints"') == 2
     assert (
-        goal6.count(
-            "security_group_id            = module.network.aws_endpoints_security_group_id"
-        )
+        goal6.count("security_group_id            = module.network.aws_endpoints_security_group_id")
         == 2
     )
     assert "module.network.aws_endpoints_security_group_id" in goal6
     assert "module.doris_verifier.admin_security_group_id" in goal6
     assert "module.doris_verifier.verifier_security_group_id" in goal6
-    assert 'cidr_ipv4' not in goal6
+    assert "cidr_ipv4" not in goal6
     assert (
         'description                  = "Goal 6 read-only verifier access to existing private AWS interface endpoints only."'
         in goal6
     )
-    assert 'goal6_secret_arns = var.goal_6_enabled ? [' in development
+    assert "goal6_secret_arns = var.goal_6_enabled ? [" in development
     assert 'module.secrets.secret_arns["doris/admin"]' in development
     assert 'module.secrets.secret_arns["doris/external-read-oauth"]' in development
     assert 'module.secrets.secret_arns["doris/query"]' in development
-    assert "goal6_secrets_kms_key_arn = var.goal_6_enabled ? module.kms.secrets_key_arn : null" in development
+    assert (
+        "goal6_secrets_kms_key_arn = var.goal_6_enabled ? module.kms.secrets_key_arn : null"
+        in development
+    )
