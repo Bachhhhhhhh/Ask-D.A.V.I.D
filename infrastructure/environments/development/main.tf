@@ -10,6 +10,10 @@ module "network" {
   nat_gateway_mode         = var.nat_gateway_mode
   tags                     = local.tags
 }
+data "aws_subnet" "goal6_selected" {
+  count = var.goal_6_enabled ? 1 : 0
+  id    = var.goal_6_data_subnet_id
+}
 module "kms" {
   source                  = "../../modules/kms"
   name_prefix             = local.name_prefix

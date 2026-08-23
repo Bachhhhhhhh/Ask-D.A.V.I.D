@@ -3,6 +3,14 @@ variable "name_prefix" { type = string }
 variable "region" { type = string }
 variable "vpc_id" { type = string }
 variable "data_subnet_id" { type = string }
+variable "data_subnet_availability_zone" {
+  description = "Availability zone of the selected data subnet, resolved outside the module so plan-time dependencies remain known."
+  type        = string
+}
+variable "data_subnet_cidr_block" {
+  description = "CIDR block of the selected data subnet, resolved outside the module for deterministic private-IP validation."
+  type        = string
+}
 variable "fe_private_ip" {
   description = "Stable private IPv4 address reserved for the Terraform-managed FE in the selected data subnet."
   type        = string

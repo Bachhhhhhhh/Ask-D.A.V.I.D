@@ -9,10 +9,10 @@ locals {
   # offsets per block.  A non-/20 selected subnet produces an empty list and
   # fails the check/precondition below rather than silently widening scope.
   selected_subnet_ipv4_hosts = var.enabled ? (
-    can(regex("/20$", data.aws_subnet.selected[0].cidr_block)) ? flatten([
+    can(regex("/20$", var.data_subnet_cidr_block)) ? flatten([
       for subnet_number in range(0, 16) : [
         for host_number in range(0, 256) : cidrhost(
-          data.aws_subnet.selected[0].cidr_block,
+          var.data_subnet_cidr_block,
           subnet_number * 256 + host_number
         )
       ]
@@ -281,7 +281,7 @@ resource "aws_vpc_security_group_egress_rule" "be_https" {
 resource "aws_ebs_volume" "fe_data" {
   count = var.enabled ? 1 : 0
 
-  availability_zone = data.aws_subnet.selected[0].availability_zone
+  availability_zone = var.data_subnet_availability_zone
   size              = var.fe_data_volume_gib
   type              = "gp3"
   encrypted         = true
@@ -295,7 +295,7 @@ resource "aws_ebs_volume" "fe_data" {
 resource "aws_ebs_volume" "be_data" {
   count = var.enabled ? 1 : 0
 
-  availability_zone = data.aws_subnet.selected[0].availability_zone
+  availability_zone = var.data_subnet_availability_zone
   size              = var.be_data_volume_gib
   type              = "gp3"
   encrypted         = true
@@ -313,7 +313,7 @@ resource "aws_ebs_volume" "be_data" {
 resource "aws_ebs_volume" "fe_data_rebuild" {
   count = var.enabled && var.rebuild_serving_state ? 1 : 0
 
-  availability_zone = data.aws_subnet.selected[0].availability_zone
+  availability_zone = var.data_subnet_availability_zone
   size              = var.fe_data_volume_gib
   type              = "gp3"
   encrypted         = true
@@ -330,7 +330,7 @@ resource "aws_ebs_volume" "fe_data_rebuild" {
 resource "aws_ebs_volume" "be_data_rebuild" {
   count = var.enabled && var.rebuild_serving_state ? 1 : 0
 
-  availability_zone = data.aws_subnet.selected[0].availability_zone
+  availability_zone = var.data_subnet_availability_zone
   size              = var.be_data_volume_gib
   type              = "gp3"
   encrypted         = true
@@ -342,11 +342,6 @@ resource "aws_ebs_volume" "be_data_rebuild" {
     Role          = "backend-serving-data-rebuild"
     StateRecovery = "explicit-goal6-rebuild"
   })
-}
-
-data "aws_subnet" "selected" {
-  count = var.enabled ? 1 : 0
-  id    = var.data_subnet_id
 }
 
 check "private_ips_are_valid_for_selected_subnet" {
