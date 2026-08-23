@@ -1,6 +1,7 @@
 """Command-line validation for the platform's non-secret configuration."""
 
 import argparse
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -18,7 +19,9 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Validate environment variables and print a sanitized result."""
-    arguments = parse_args(argv)
+    # Library callers (including unit tests) must not inherit the hosting
+    # process arguments. The console entry point supplies sys.argv explicitly.
+    arguments = parse_args([] if argv is None else argv)
     try:
         settings = PlatformSettings(_env_file=arguments.env_file)
     except ValidationError as error:
@@ -30,4 +33,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

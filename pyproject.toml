@@ -35,6 +35,7 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 files = [
+  "packages/goal7-runtime/src",
   "packages/ingestion-framework/src",
   "packages/platform-foundation/src",
   "scripts/dev.py",
@@ -42,6 +43,7 @@ files = [
   "scripts/validate_goal5.py",
   "scripts/verify_goal4_table_inventory.py",
   "scripts/verify_goal5_table_inventory.py",
+  "scripts/validate_goal7.py",
 ]
 strict = true
 warn_unused_configs = true
@@ -49,7 +51,12 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = [".", "packages/platform-foundation/src", "packages/ingestion-framework/src"]
+pythonpath = [
+  ".",
+  "packages/platform-foundation/src",
+  "packages/ingestion-framework/src",
+  "packages/goal7-runtime/src",
+]
 addopts = "-ra --strict-markers -m 'not integration and not cloud' --cov=ask_david_foundation --cov=ask_david_ingestion --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=90"
 markers = [
   "integration: tests requiring local services; excluded from the default test run.",

@@ -81,6 +81,7 @@ def check() -> None:
     databricks_static()
     goal5_static()
     goal6_static()
+    goal7_static()
     security()
 
 
@@ -97,6 +98,11 @@ def goal5_static() -> None:
 def goal6_static() -> None:
     """Validate Goal 6 serving contracts without credentials or cloud access."""
     run(["uv", "run", "python", "scripts/validate_goal6.py"])
+
+
+def goal7_static() -> None:
+    """Validate Goal 7 source contracts without credentials or cloud access."""
+    run(["uv", "run", "python", "scripts/validate_goal7.py"])
 
 
 TERRAFORM_DEVELOPMENT = "infrastructure/environments/development"

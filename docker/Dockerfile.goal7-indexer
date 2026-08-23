@@ -1,0 +1,11 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY packages/goal7-runtime/src/ask_david_goal7 /app/ask_david_goal7
+COPY opensearch/index-mapping.json /app/opensearch/index-mapping.json
+
+ENV PYTHONPATH=/app
+
+USER 65532:65532
+ENTRYPOINT ["python", "-m", "ask_david_goal7.indexer"]

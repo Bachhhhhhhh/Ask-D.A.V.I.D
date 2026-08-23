@@ -1,0 +1,25 @@
+{
+  "settings": {
+    "index.knn": true
+  },
+  "mappings": {
+    "properties": {
+      "chunk_id": { "type": "keyword" },
+      "document_id": { "type": "keyword" },
+      "title": { "type": "text" },
+      "content": { "type": "text", "index": false },
+      "source_uri": { "type": "keyword" },
+      "allowed_roles": { "type": "keyword" },
+      "embedding_model_id": { "type": "keyword" },
+      "embedding": {
+        "type": "knn_vector",
+        "dimension": 1024,
+        "method": {
+          "name": "hnsw",
+          "engine": "nmslib",
+          "space_type": "cosinesimil"
+        }
+      }
+    }
+  }
+}
