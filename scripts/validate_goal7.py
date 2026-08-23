@@ -127,9 +127,9 @@ def validate_goal7_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     ):
         if marker not in variables:
             errors.append(f"Goal 7 Terraform input guard is missing: {marker}")
-    if "image                      = var.goal_7_indexer_image" not in development_main:
+    if not re.search(r"(?m)^\s*image\s*=\s*var\.goal_7_indexer_image$", development_main):
         errors.append("Goal 7 indexer must use its dedicated image input")
-    if "image                       = var.goal_7_demo_image" not in development_main:
+    if not re.search(r"(?m)^\s*image\s*=\s*var\.goal_7_demo_image$", development_main):
         errors.append("Goal 7 integrated demo must use its dedicated image input")
     if "var.goal_7_demo_image != null" not in variables:
         errors.append("Goal 7 integrated demo image must be required when enabled")

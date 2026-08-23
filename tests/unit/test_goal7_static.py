@@ -1,6 +1,7 @@
 """Offline Goal 7 contract and integrated-demo tests."""
 
 import json
+import re
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -79,8 +80,8 @@ def test_goal7_indexer_and_demo_have_separate_image_contracts() -> None:
         encoding="utf-8"
     )
 
-    assert "image                      = var.goal_7_indexer_image" in development
-    assert "image                       = var.goal_7_demo_image" in development
+    assert re.search(r"(?m)^\s*image\s*=\s*var\.goal_7_indexer_image$", development)
+    assert re.search(r"(?m)^\s*image\s*=\s*var\.goal_7_demo_image$", development)
     assert 'variable "goal_7_demo_image"' in variables
     assert "var.goal_7_indexer_image != var.goal_7_demo_image" in variables
     assert 'ENTRYPOINT ["python", "-m", "ask_david_goal7.indexer"]' in indexer
