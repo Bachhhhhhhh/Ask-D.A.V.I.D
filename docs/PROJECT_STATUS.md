@@ -7,6 +7,482 @@ verification.
 
 ## Current snapshot
 
+- Current Goal 7 final acceptance (`2026-08-23`) — **VERIFIED — MINIMAL
+  DEVELOPMENT SYNTHETIC PROFILE**. The dedicated indexer R8 emitted
+  `index-and-search-ready` with
+  `indexed_chunks=1` and `search_hits=1`; the private integrated-demo retry
+  then exited `0` with all three fixed agents successful and
+  `integrated-demo-completed`. The final Terraform plan
+  `/tmp/goal7-final-zero-drift-20260823.tfplan` (SHA-256
+  `f7e12fa235a79406de3dceb0daf4a4dd509dbc0367c50c1828720bfda5aa503b`)
+  returned 280 no-ops and zero actions. The full scoped acceptance report is
+  `docs/verification/GOAL-07-FINAL-VERIFICATION-2026-08-23.md`. This is the
+  approved minimal development synthetic profile; roadmap-scale benchmarks
+  and ECR registry scan findings remain outside/UNVERIFIED. This durable
+  status is recorded by the approved status-only commit containing this
+  checkpoint and its final verification report.
+
+- Latest Goal 7 checkpoint (`2026-08-23`) — **OFFLINE IMPLEMENTED /
+  NOT VERIFIED**. The exact diagnostics task-definition plan SHA-256
+  `8db00b4a0f4d257ea10a34a57756007d55c4192f5118cc14295203d5986640be`
+  was applied as revision `:3`. Its one approved private task
+  `e9959050378f4e9d8dcde75040a75d4d` exited `1`; bounded CloudWatch evidence
+  showed `structured=success`, `unstructured=success`, and
+  `analytics=error/analytics_insufficient_periods`. Repository analysis found
+  that the connected Analytics adapter selected only the one-period
+  `goal5.synthetic.events` dataset and excluded the already verified governed
+  increment `goal6.synthetic.serving.increment`. The approved offline
+  remediation keeps the controlled SELECT-only Statements API path, expands
+  the fixed allowlist to those two datasets, adds a 100-row bound and
+  fail-closed response check, and adds a read-only Serverless SQL readiness
+  job for operators. Goal 7 static validation, 39 focused tests, Python
+  compilation, and diff checks pass. The agent does not acquire job-execution
+  or arbitrary SQL capability. A separately approved strict connected bundle
+  validation then ran exactly once with target `development`, profile
+  `ask-david-development`, no `workspace_host`, and aggregate source SHA-256
+  `f6eac785a71b8ae090007c92c71795c0c1dceec2056b6f71e12e8a4edef4cbd3`; it
+  returned `Validation OK!`, exit `0`, with no warning or error. No deployment,
+  job/SQL run, compute creation, Terraform, AWS, or data mutation occurred.
+  Goal 7 remains NOT VERIFIED. The separately approved bundle deployment then
+  completed with exit `0`; read-only inspection found exactly the new
+  `ask-david-development-goal7-analytics-readiness` job (ID
+  `853752024319384`), one `verify_analytics_source` SQL task on warehouse
+  `757e0335c6efb51e`, and no job run or new compute. The deployed SQL hash
+  matched the reviewed local hash
+  `e9e67a089e5512eaa8ac702da4ca7ea90c06aa259fbaf4eb76124f72b60b2a56`.
+  A separately approved one-time readiness run then completed successfully:
+  run `207820321246503`, task run `506288770663965`, attempt `0`, with no
+  retry. The separately approved remediation image was then built and pushed
+  under immutable tag `goal7-analytics-two-period-58af3867`, with local and ECR
+  digest
+  `sha256:5ae9ece53e396313ea0a2dbfae4476933230a892eeebfb6c0ff9fbae84cd6c4f`.
+  Registry vulnerability scan status was `null` and remains UNVERIFIED. The
+  next boundary is a digest-only ignored tfvars update, offline preflight, and
+  saved task-definition Terraform plan.
+Evidence:
+`docs/verification/GOAL-07-ANALYTICS-TWO-PERIOD-OFFLINE-REMEDIATION-2026-08-23.md`.
+
+The separately approved one-shot private integrated-demo retry then completed
+successfully from task-definition revision `4`. Task
+`c49fcf39a9574162867dc934a4cc9d46` ran in private subnet
+`subnet-0a1aad220d82ef879` at `10.42.33.233`, with no public IP, and stopped
+with container exit code `0`; no retry or repair run occurred. CloudWatch
+reported `structured=success`, `unstructured=success`, and
+`analytics=success`, plus `status=integrated-demo-completed`, canonical
+embedding model `databricks-gte-large-en`, and dimension `1024`. The bounded
+answer included the two-period synthetic metric comparison, contributor, and
+neutral document evidence. Together with the dedicated indexer PASS in
+`GOAL-07-INDEXER-TASK-DIAGNOSTIC-R8-2026-08-22.md`, the runtime paths are now
+PASS. Goal 7 is not yet marked VERIFIED: a final connected zero-drift and
+acceptance review remains required. No further task, SQL, Databricks, or AWS
+mutation occurred.
+
+The separately approved final connected Terraform zero-drift plan then
+completed after account/region revalidation. Terraform reported `No changes`;
+the saved plan `/tmp/goal7-final-zero-drift-20260823.tfplan` has SHA-256
+`f7e12fa235a79406de3dceb0daf4a4dd509dbc0367c50c1828720bfda5aa503b`.
+Machine-readable inspection found 280 resource changes, all `no-op`, with
+zero creates, updates, replacements, or destroys. No apply, destroy, ECS task,
+SQL, Databricks mutation, or AWS mutation followed. Runtime acceptance and
+infrastructure drift are now PASS; Goal 7 status remains subject to the
+durable final acceptance/status review and is not inferred from this plan
+alone. Evidence:
+`docs/verification/GOAL-07-ANALYTICS-TWO-PERIOD-OFFLINE-REMEDIATION-2026-08-23.md`.
+
+- Goal 7 — Minimal integrated AI retrieval/agent source is **PARTIALLY
+  IMPLEMENTED / NOT VERIFIED** in the current working tree. Offline evidence is
+  recorded in `docs/verification/GOAL-07-OFFLINE-IMPLEMENTATION-2026-08-20.md`
+  and connected read-only revalidation in
+  `docs/verification/GOAL-07-PREFLIGHT-2026-08-20.md`. AWS account `736956442295`,
+  workspace `7474644358733471`, metastore, project catalog, IAM storage role,
+  approved S3/KMS foundation, and private AOSS endpoint passed. The approved
+  AOSS collection is now ACTIVE; no vector index has been created. The existing
+  Serverless SQL warehouse is now `RUNNING` and healthy,
+  and the read-only current-metastore SQL assertion passed. A saved development
+  Terraform plan is recorded in
+  `docs/verification/GOAL-07-SAVED-PLAN-2026-08-20.md` with three creates and
+  zero updates/replacements/destroys. The captured apply output ended while the
+  AOSS collection was creating, but subsequent read-only inspection shows the
+  collection `ask-david-development-knowledge` is `ACTIVE`, the data access
+  policy exists, and all three resources are recorded in remote Terraform
+  state. This reconciliation is documented in
+  `docs/verification/GOAL-07-APPLY-PARTIAL-2026-08-20.md`; the process exit is
+  not independently certified. Goal 7 remains unverified pending the private
+  indexer image/plan/task, AOSS index/search/authorization, and end-to-end
+  gates. The strict
+  bundle validation passed, and the reviewed bundle deployment created only
+  Goal 7 job `306888706947227` with three SQL tasks; its one approved run
+  succeeded and produced one governed chunk and one outbox row. Evidence:
+  `docs/verification/GOAL-07-BUNDLE-DEPLOYMENT-2026-08-20.md` and
+  `docs/verification/GOAL-07-SYNTHETIC-SQL-RUN-2026-08-20.md`. The private
+  indexer deployment boundary is implemented and offline-validated. The image
+  has been pushed, but the first approved connected plan attempt was blocked
+  before producing a saved plan because it unexpectedly proposed four
+  protected Goal 6 EBS replacements and could not determine the Goal 7 secret
+  policy count. Evidence:
+  `docs/verification/GOAL-07-CONNECTED-PLAN-BLOCKER-2026-08-21.md`. The
+  offline planability remediation is now implemented and validated: Goal 6
+  subnet metadata is root-resolved and explicitly passed to the Doris module,
+  the Goal 7 secret-policy count is driven by a plan-known task gate, and mock
+  fixtures isolate Goal 6/7 gates. Evidence:
+  `docs/verification/GOAL-07-CONNECTED-PLAN-BLOCKER-REMEDIATION-2026-08-21.md`.
+  A new saved connected development plan was then created and reviewed with
+  eight creates, zero changes, zero replacements, and zero destroys. Evidence:
+  `docs/verification/GOAL-07-CONNECTED-PLAN-2026-08-21.md`. The exact plan was
+  subsequently applied with eight creates, zero changes, zero replacements,
+  and zero destroys. Evidence:
+  `docs/verification/GOAL-07-CONNECTED-PLAN-APPLY-2026-08-21.md`. The task
+  definitions now exist, but no ECS task, integrated demo task, or AOSS index
+  mutation has occurred. The first approved indexer readiness preflight then
+  stopped fail-closed because the Databricks CLI development profile reported
+  `Valid: NO`; evidence:
+  `docs/verification/GOAL-07-INDEXER-PREFLIGHT-BLOCKED-2026-08-21.md`. A local
+  runtime image has now been built and verified as
+  non-root with digest `sha256:c854fe57c92ad16be5cdb9935cfa16736164749a9812c9183157ad9417fae84f`.
+  The exact digest was pushed under immutable ECR tag
+  `goal7-runtime-17a425d0`; immediate ECR scan inspection returned
+  `ScanNotFoundException`, so vulnerability scanning remains unverified. The
+  image has not completed a task. After reauthentication, the one approved
+  indexer task failed before container startup because the workload security
+  group has no egress rules and could not reach Secrets Manager; evidence:
+  `docs/verification/GOAL-07-INDEXER-TASK-FAILURE-2026-08-21.md`. No retry or
+  AOSS index mutation has occurred; Goal 7 remains unverified.
+  The approved offline network remediation now declares exactly one
+  Terraform-managed SG-scoped TCP/443 egress rule from the Goal 7 workload SG
+  to the existing AWS interface-endpoints SG; static and Terraform-module
+  regression checks reject public-CIDR egress. A separately approved connected
+  development plan was then created and independently filtered to exactly one
+  egress-rule create, zero updates/replacements/destroys, and zero Goal 6,
+  task-definition, AOSS, Databricks, public, or production actions. Its SHA-256
+  is `80fa254bb6a62f8c23f257651c92ad935a8fba008e33697427198fc670c018e6`.
+  That exact plan was subsequently applied with `1 added, 0 changed, 0
+  destroyed`; read-only inspection confirmed the new rule
+  `sgr-0c5b69beec0bb6fc7`, the existing endpoint ingress, and no running ECS
+  task. The one separately approved private indexer run then failed before
+  container startup while pulling the digest-pinned image: the ECR layer path
+  timed out at `52.219.124.111:443`. Secrets Manager/ECR interface endpoints
+  and the S3 gateway route are available, but the workload SG has no egress
+  rule for the S3 managed prefix list. The approved offline remediation now
+  declares exactly one SG egress rule to the existing S3 gateway prefix list;
+  static tests reject public/CIDR alternatives. No retry occurred; Goal 7
+  remains unverified pending a reviewed apply of the new saved plan and a new
+  one-shot task approval. The saved plan has exactly one create, zero
+  update/replacement/destroy actions, and SHA-256
+  `f48b163af53daf82693ad206e1071ddf34988ccb26be05ff0f183eeeb7dc541d`.
+  That exact plan was applied with `1 added, 0 changed, 0 destroyed`; rule
+  `sgr-02d4f83f0f3d19c6e` and the active S3 gateway route/prefix list were
+  verified read-only. No indexer retry has occurred; a separate one-shot task
+  approval is required. That one approved retry then started successfully but
+  exited with code `1`; its sanitized CloudWatch error was
+  `missing required environment variable: DORIS_FE_HOST`. The checked-in
+  indexer contract does not require Doris, so the deployed image digest is
+  inconsistent with the indexer source contract. No second retry occurred;
+  Goal 7 remains unverified pending dedicated-image remediation.
+  Evidence:
+  `docs/verification/GOAL-07-WORKLOAD-EGRESS-CONNECTED-PLAN-2026-08-21.md`,
+  `docs/verification/GOAL-07-WORKLOAD-EGRESS-APPLY-2026-08-21.md`,
+  `docs/verification/GOAL-07-INDEXER-TASK-FAILURE-R2-2026-08-21.md`,
+  `docs/verification/GOAL-07-S3-EGRESS-OFFLINE-REMEDIATION-2026-08-21.md`,
+  `docs/verification/GOAL-07-S3-EGRESS-CONNECTED-PLAN-2026-08-21.md`,
+  `docs/verification/GOAL-07-S3-EGRESS-APPLY-2026-08-21.md`,
+  `docs/verification/GOAL-07-INDEXER-TASK-FAILURE-R3-2026-08-21.md`,
+  `docs/verification/GOAL-07-INDEXER-OFFLINE-IMPLEMENTATION-2026-08-20.md`.
+  `docs/verification/GOAL-07-CONNECTED-RUNTIME-OFFLINE-IMPLEMENTATION-2026-08-20.md`,
+  `docs/verification/GOAL-07-RUNTIME-IMAGE-BUILD-2026-08-20.md`, and
+  `docs/verification/GOAL-07-RUNTIME-IMAGE-ECR-PUSH-2026-08-20.md`. Offline
+  remediation now enforces separate digest-pinned image inputs for the
+  outbox indexer and integrated demo: the indexer must use the dedicated
+  `Dockerfile.goal7-indexer` image and must not depend on `DORIS_FE_HOST`,
+  while the later demo uses the Doris-aware runtime image. Terraform requires
+  both inputs when their task gates are enabled and rejects sharing a digest.
+  Static validation and regression tests cover the entry-point/source
+  boundary; no image was pushed, no ignored digest was changed, and no task
+  was retried. Goal 7 remains unverified pending local image evidence,
+  separately approved image promotion, a new saved plan, and one approved
+  private indexer run. Evidence:
+  `docs/verification/GOAL-07-INDEXER-IMAGE-CONTRACT-OFFLINE-REMEDIATION-2026-08-21.md`.
+  The dedicated indexer image was then pushed to the existing immutable ECR
+  repository as tag `goal7-indexer-6fc7ce13`; remote digest
+  `sha256:08ef16bfbd3e4dbd6a940227a6fd7afab14385644eec617d02da7c8f46714669`
+  matches the local build and source aggregate
+  `6fc7ce13b4a5a53c51124529ca483f72eb921e02d5dbf01e51ae8a72afef4207`.
+  ECR scan inspection returned `ScanNotFoundException`, so vulnerability
+  findings remain UNVERIFIED. The ignored development image inputs have not
+  been updated, no connected plan or task retry has occurred, and Goal 7
+  remains unverified. Evidence:
+  `docs/verification/GOAL-07-INDEXER-IMAGE-ECR-PUSH-2026-08-21.md`.
+  The ignored inputs were subsequently updated with the dedicated indexer
+  digest and the distinct existing runtime/demo digest. A connected saved
+  development plan was created and reviewed with exactly one ECS
+  task-definition replacement for `module.goal7_indexer`; all other managed
+  resources are no-op. Plan SHA-256 is
+  `735bfa4dac33aececb61d5672ca04514677c27e3105fef36cc5496c5208b1b33`.
+  No apply or task run has occurred; Goal 7 remains unverified pending
+  separate apply approval and one private indexer run. Evidence:
+  `docs/verification/GOAL-07-DEDICATED-INDEXER-CONNECTED-PLAN-2026-08-21.md`.
+  The exact plan was then applied. Read-only ECS inspection shows
+  `ask-david-development-goal7-indexer:2` ACTIVE with the dedicated indexer
+  digest and revision `:1` INACTIVE; no ECS task is running. No task was
+  launched. Goal 7 remains unverified pending one separately approved private
+  indexer run and subsequent AOSS/index/search/authorization evidence.
+  Evidence: `docs/verification/GOAL-07-DEDICATED-INDEXER-APPLY-2026-08-21.md`.
+  The one approved private revision-2 indexer run then reached RUNNING but
+  stopped with exit `1`: the CloudWatch stack trace records a Databricks OAuth
+  endpoint timeout before `read_outbox()` and before any AOSS operation. No
+  retry or AOSS mutation occurred. Goal 7 remains unverified pending an
+  offline network-path analysis/remediation design for private ECS-to-
+  Databricks access. The approved offline design is now complete: the private
+  subnet route reaches the existing NAT gateway, but the workload SG has no
+  reviewed egress destination for the Databricks workspace host. The design
+  requires read-only verification of an existing Databricks PrivateLink/private
+  connectivity path before any source change; it rejects generic `0.0.0.0/0`
+  workload HTTPS egress, static SaaS IP rules, static credentials, and
+  unapproved proxy/firewall additions. No source, AWS/Databricks resource,
+  connected plan, task retry, or AOSS operation occurred in this checkpoint.
+  Goal 7 remains unverified and is stopped before connected revalidation.
+  Evidence:
+  `docs/verification/GOAL-07-INDEXER-TASK-FAILURE-R4-2026-08-21.md` and
+  `docs/verification/GOAL-07-DATABRICKS-NETWORK-PATH-OFFLINE-DESIGN-2026-08-21.md`.
+  The separately approved connected read-only revalidation then confirmed the
+  exact development workspace/account/region, running Serverless warehouse,
+  attached metastore, private route table, NAT, endpoint SG, and workload SG.
+  It also confirmed the workspace/account are Premium and the Databricks
+  account APIs reject VPC endpoint/private-access inspection because those
+  features require Enterprise; no Databricks endpoint exists in the project
+  VPC. The configured workspace hostname resolves publicly, while workload
+  egress remains limited to AWS endpoint SG and S3 prefix-list destinations.
+  The user then approved the Premium + NAT alternative. Offline Terraform
+  source now declares a dedicated, gated Goal 7 task SG with implicit egress
+  disabled and explicit TCP/443 paths to the existing AWS endpoint SG, S3
+  prefix list, and public workspace endpoint through the existing private
+  subnet NAT route. AOSS/Doris/endpoint ingress is wired to the dedicated SG;
+  the shared workload SG remains unchanged. Static validation and 17 focused
+  tests pass. No connected plan, apply, ECS retry, Databricks SQL, ECR, AOSS,
+  or AWS mutation occurred. Goal 7 remains **UNVERIFIED / AWAITING A SEPARATE
+  SAVED CONNECTED DEVELOPMENT PLAN**. Evidence:
+  `docs/verification/GOAL-07-PREMIUM-NAT-OFFLINE-REMEDIATION-2026-08-21.md`.
+  The subsequent one approved private revision-2 indexer task reached the
+  AOSS request path but exited `1`; CloudWatch records
+  `AOSS index creation failed: HTTP 406` from `ensure_index()` and no index
+  was created. Offline remediation now sets the JSON `Content-Type` on that
+  index-creation PUT and adds a regression test. No image rebuild/push, digest
+  update, Terraform operation, bundle/SQL operation, or task retry occurred;
+  Goal 7 remains **UNVERIFIED** pending offline validation and separately
+  approved image/task checkpoints. Evidence:
+  `docs/verification/GOAL-07-AOSS-HTTP406-OFFLINE-REMEDIATION-2026-08-21.md`.
+  The corrected indexer image was then built from source aggregate
+  `16f0bfb0cba5708a521f40de2b52ad0b8fc004d9347d84804646b221a659c260` and
+  pushed under immutable ECR tag `goal7-indexer-aoss406-16f0bfb0` with remote
+  digest `sha256:56263b9c594825f1509f305bb9911b499acd944dcc9971731d04dc18b530a641`;
+  local and remote digests match. ECR scan status is `null`, so findings remain
+  UNVERIFIED. The ignored image input, Terraform task definition, and ECS task
+  were not changed or run. Goal 7 remains **UNVERIFIED** pending a separate
+  digest update, task-definition-only plan/apply, and one new private task.
+  Evidence:
+  `docs/verification/GOAL-07-AOSS-HTTP406-IMAGE-PROMOTION-2026-08-21.md`.
+  The subsequent saved plan for that digest was deliberately rejected: its
+  SHA-256 is `7833e285c3cbb1b6f2d3a5af0d8421dea77070aed4a38365ae9bbfb637fa68a5`
+  and it proposed the expected indexer task-definition replacement plus an
+  unexpected in-place update removing the three already-reviewed dedicated SG
+  egress rules. No apply occurred. Offline remediation now preserves the
+  intentional `egress = []` creation boundary while adding
+  `lifecycle.ignore_changes = [egress]`; the three standalone SG egress rule
+  resources remain authoritative. Static validation, regression tests, Python
+  compilation, Ruff, diff checks, and infrastructure preflight passed. Goal 7
+  remains **UNVERIFIED** pending a separately approved new saved connected plan
+  whose actions are task-definition-only. Evidence:
+  `docs/verification/GOAL-07-PREMIUM-NAT-SG-DRIFT-OFFLINE-REMEDIATION-2026-08-21.md`.
+  The replacement saved plan was then created after account/region
+  revalidation. Plan artifact `/tmp/goal7-aoss406-taskdef-20260821-r2.tfplan`
+  has SHA-256
+  `e75cc08ab828779e98ee54f821ed3e83f4c1469de987c36df9560d66eed33712`.
+  Machine-readable inspection reports exactly one Goal 7 indexer task
+  definition replacement (`1 create` + `1 delete`), `0` updates, and `278`
+  no-ops. The unexpected dedicated-SG egress update is gone. The plan has not
+  been applied; Goal 7 remains **UNVERIFIED / AWAITING SEPARATE APPROVAL TO
+  APPLY THIS EXACT SAVED PLAN**. Evidence:
+  `docs/verification/GOAL-07-AOSS-HTTP406-TASKDEF-REMEDIATION-CONNECTED-PLAN-2026-08-21.md`.
+  The exact hash-bound plan was subsequently applied after account, region,
+  and SHA-256 revalidation. Terraform reported `1 added, 0 changed, 1
+  destroyed`, replacing only the Goal 7 indexer task definition with revision
+  `3` and image digest
+  `sha256:56263b9c594825f1509f305bb9911b499acd944dcc9971731d04dc18b530a641`.
+  Read-only ECS inspection confirmed the revision is ACTIVE Fargate/`awsvpc`
+  and no task is RUNNING. No other AWS/Databricks resource changed and no
+  task was run. Goal 7 remains **UNVERIFIED / AWAITING SEPARATE APPROVAL FOR
+  ONE PRIVATE NO-RETRY INDEXER TASK**. Evidence:
+  `docs/verification/GOAL-07-AOSS-HTTP406-TASKDEF-REMEDIATION-APPLY-2026-08-21.md`.
+  The one approved private revision-3 indexer task then stopped with exit code
+  `1` and was not retried. Its CloudWatch traceback reached
+  `bulk_upsert()` and failed with `RuntimeError: AOSS vector upsert failed`.
+  The task ENI was already removed before the immediate read-only ENI lookup,
+  so no private-IP evidence is claimed. The current log does not include the
+  AOSS response status/body, so the exact rejection remains unverified. Goal 7
+  remains **UNVERIFIED / STOPPED FOR OFFLINE AOSS UPSERT FAILURE ANALYSIS**.
+  Evidence:
+  `docs/verification/GOAL-07-INDEXER-TASK-FAILURE-R5-2026-08-21.md`.
+  The approved offline remediation is now implemented and validated. It
+  removes the unsupported custom-ID/`doc_as_upsert` write shape for AOSS
+  `VECTORSEARCH`: the deterministic `chunk_id` is resolved with a bounded
+  search, new documents use AOSS-generated IDs, and existing documents are
+  updated by their discovered generated ID without upsert. Error reporting is
+  bounded and non-secret, and search verification matches `_source.chunk_id`.
+  Static validation, 20 focused unit tests, Python compilation, Ruff, diff
+  checks, and infrastructure preflight passed; the full repository unit suite
+  remains unverified because this environment lacks optional `pydantic`. At
+  that offline-only checkpoint, no image build/push, digest update, Terraform
+  operation, bundle/SQL operation, AWS/Databricks mutation, or task retry
+  occurred. Goal 7 remained **UNVERIFIED / AWAITING A SEPARATE IMAGE
+  PROMOTION AND TASK-DEFINITION CHECKPOINT**. Evidence:
+  `docs/verification/GOAL-07-AOSS-VECTOR-UPSERT-OFFLINE-REMEDIATION-2026-08-21.md`.
+  The separately approved corrected indexer image was then built from source
+  aggregate `2d2abf39b875df78b1e4b3ff37c355ba5d0992596d652afdb8900ddb9c61e9aa`
+  and pushed under immutable ECR tag `goal7-indexer-2d2abf39`. Local and
+  remote inspection agree on digest
+  `sha256:bd3b9f2afd102cf165ee6b303fd973b228233d72406967d81c3b616e2f350b5e`.
+  The image is non-root with the dedicated indexer entrypoint and its
+  network-disabled import check passed. ECR scan inspection returned
+  `ScanNotFoundException`, so vulnerability findings remain UNVERIFIED. The
+  ignored development digest, Terraform task definition, and ECS task remain
+  unchanged; no task was run. Goal 7 remains **UNVERIFIED / AWAITING A
+  SEPARATE IGNORED-DIGEST UPDATE AND SAVED TASK-DEFINITION PLAN**. Evidence:
+  `docs/verification/GOAL-07-AOSS-VECTOR-UPSERT-IMAGE-PROMOTION-2026-08-21.md`.
+  The ignored development indexer digest was then updated to the promoted
+  image and offline preflight passed. A saved connected plan was created after
+  account/region/profile revalidation at
+  `/tmp/goal7-aoss-vector-upsert-taskdef-20260821.tfplan`, SHA-256
+  `538bd60db293e0c52fda59793adfa26c541f2fd4397c51de3c04f1f495c03f10`.
+  Machine-readable inspection reports exactly one Goal 7 indexer
+  task-definition replacement (`1 create` + `1 delete`), `0` updates, and
+  `278` no-ops; no other AWS/Databricks/production/public action is planned.
+  The plan has not been applied and no task has run. Goal 7 remains
+  **UNVERIFIED / AWAITING SEPARATE APPROVAL TO APPLY THIS EXACT PLAN**.
+  Evidence:
+  `docs/verification/GOAL-07-AOSS-VECTOR-UPSERT-TASKDEF-CONNECTED-PLAN-2026-08-21.md`.
+  The exact hash-bound plan was then applied after account, region, and SHA-256
+  revalidation. Terraform reported `1 added, 0 changed, 1 destroyed`, replacing
+  only the indexer task definition with ACTIVE revision `:4` and the corrected
+  image digest. Read-only ECS inspection confirmed Fargate/`awsvpc`, the fixed
+  indexer entrypoint, existing roles/secret reference, and no RUNNING indexer
+  task. No other AWS/Databricks resource changed and no task was launched.
+  Goal 7 remains **UNVERIFIED / AWAITING SEPARATE APPROVAL FOR ONE PRIVATE
+  NO-RETRY INDEXER TASK**. Evidence:
+  `docs/verification/GOAL-07-AOSS-VECTOR-UPSERT-TASKDEF-APPLY-2026-08-21.md`.
+  The one approved private revision-4 task then stopped with exit code `1`
+  after reaching `DatabricksSqlClient.query_embedding()`; CloudWatch reports
+  `RuntimeError: Databricks query embedding response was invalid`. The task
+  ENI was deleted after stop and no retry/running task exists. Because the
+  checked-in sequence performs `ensure_index()` and `bulk_upsert()` before the
+  embedding query, AOSS write success is not claimed or inspected after the
+  failure. Goal 7 remains **UNVERIFIED / STOPPED FOR OFFLINE DATABRICKS
+  EMBEDDING-RESPONSE ANALYSIS**. Evidence:
+  `docs/verification/GOAL-07-INDEXER-TASK-FAILURE-R6-2026-08-21.md`.
+
+  The approved offline embedding-response remediation is now implemented and
+  validated. `DatabricksSqlClient.statement()` performs bounded status/result
+  diagnostics without logging secrets or raw result bodies; `query_embedding()`
+  accepts both native lists and JSON-array strings returned for SQL
+  `ARRAY<FLOAT>` values, converts numeric values, and preserves the canonical
+  1024-dimension fail-closed check. Goal 7 static validation, 26 focused tests,
+  Python compilation, and diff checks passed. Ruff is not installed in the
+  current environment and the full repository suite remains unverified because
+  optional `pydantic` is unavailable. No image build/push, Terraform operation,
+  bundle/SQL operation, AWS/Databricks mutation, or task retry occurred. Goal 7
+  remains **UNVERIFIED / AWAITING SEPARATE IMAGE PROMOTION AND TASK-DEFINITION
+  CHECKPOINT**. Evidence:
+  `docs/verification/GOAL-07-DATABRICKS-EMBEDDING-RESPONSE-OFFLINE-REMEDIATION-2026-08-21.md`.
+
+  The corrected indexer image was then built from source aggregate
+  `03e29f63f11dd8c35cb158076b9db3a026ad548365eff1c646427fd36a73c39f` and
+  pushed under immutable ECR tag `goal7-indexer-03e29f63`. Local and remote
+  inspection agree on digest
+  `sha256:c48ee41c63f36a6d42b4494ceba363e37754f08da60fb50e0a2e0906facc47b0`.
+  The non-root entrypoint and network-disabled import check passed. One ECR
+  scan inspection returned `ScanNotFoundException`, so vulnerability findings
+  remain unverified; no retry was performed. The ignored development digest,
+  Terraform task definition, and ECS task remain unchanged. Goal 7 remains
+  **UNVERIFIED / AWAITING A SEPARATE IGNORED-DIGEST UPDATE AND SAVED
+  TASK-DEFINITION PLAN**. Evidence:
+  `docs/verification/GOAL-07-DATABRICKS-EMBEDDING-IMAGE-PROMOTION-2026-08-21.md`.
+
+  The ignored development indexer digest was then updated to the promoted
+  image and offline preflight passed. A saved connected plan was created after
+  account/region revalidation at
+  `/tmp/goal7-indexer-taskdef-20260821.tfplan`, SHA-256
+  `53b39f6179e7b098acc6081e49c2bb551d7dc9bbc2d5bfac4a841733221310ee`.
+  Machine-readable inspection reports exactly one Goal 7 indexer
+  task-definition replacement (`1 create` + `1 delete`), `0` unrelated
+  updates, and `278` no-ops; the plan is applyable, complete, and not errored.
+  No apply or task has run. Goal 7 remains **UNVERIFIED / AWAITING SEPARATE
+  HASH-BOUND APPROVAL TO APPLY THIS EXACT PLAN**. Evidence:
+  `docs/verification/GOAL-07-EMBEDDING-TASKDEF-CONNECTED-PLAN-2026-08-21.md`.
+
+  The exact hash-bound plan was then applied after account, region, SHA-256,
+  and action-contract revalidation. Terraform reported `1 added, 0 changed, 1
+  destroyed`, replacing only the Goal 7 indexer task definition with ACTIVE
+  revision `:5` and the corrected image digest. Read-only ECS inspection
+  confirmed Fargate/`awsvpc`, the fixed indexer entrypoint, existing roles and
+  log configuration, and no RUNNING indexer task. No other AWS/Databricks
+  resource changed and no task was launched. Goal 7 remains **UNVERIFIED /
+  AWAITING SEPARATE APPROVAL FOR ONE PRIVATE NO-RETRY INDEXER TASK**. Evidence:
+  `docs/verification/GOAL-07-EMBEDDING-TASKDEF-APPLY-2026-08-21.md`.
+
+  The one approved private revision-5 indexer task then stopped with exit code
+  `1` and was not retried. Its CloudWatch traceback reached the corrected
+  Databricks embedding path and failed at `AossClient.search()` with
+  `RuntimeError: AOSS vector search failed`. The task ENI was deleted after
+  stop and no running task exists. The current search path does not persist
+  bounded HTTP status/error details, so the exact AOSS rejection remains
+  unverified. Goal 7 remains **UNVERIFIED / STOPPED FOR OFFLINE AOSS
+  VECTOR-SEARCH FAILURE ANALYSIS**. Evidence:
+  `docs/verification/GOAL-07-INDEXER-TASK-FAILURE-R7-2026-08-21.md`.
+
+  The approved offline AOSS search remediation is now implemented and
+  validated. `AossClient.search()` reports bounded HTTP/status/error details,
+  validates nested `hits.hits`, and fails closed on malformed responses without
+  logging raw bodies, vectors, or secrets. Goal 7 static validation, 29 focused
+  tests, Python compilation, and diff checks passed. Ruff is not installed in
+  the current environment and the full repository suite remains unverified
+  because optional `pydantic` is unavailable. No image build/push, Terraform
+  operation, bundle/SQL operation, AWS/Databricks mutation, or task retry
+  occurred. Goal 7 remains **UNVERIFIED / AWAITING SEPARATE IMAGE PROMOTION
+  AND TASK-DEFINITION CHECKPOINT FOR AOSS SEARCH REMEDIATION**. Evidence:
+  `docs/verification/GOAL-07-AOSS-SEARCH-OFFLINE-REMEDIATION-2026-08-21.md`.
+
+  The AOSS-search remediation image was then built from source aggregate
+  `7cf2a9bf8df6330ae9365860ee062a14ac9f31c591adfc97cfc82b8ee567e5c1` and
+  pushed under immutable ECR tag `goal7-indexer-7cf2a9bf`. Local and remote
+  inspection agree on digest
+  `sha256:da06c4e719e001edc74f837ae65e1a9b91737f7503c615058595a3b5f30e46c0`.
+  The non-root entrypoint and network-disabled import check passed. One ECR
+  scan inspection returned `ScanNotFoundException`, so vulnerability findings
+  remain unverified; no retry was performed. Terraform inputs and the active
+  task definition remain unchanged. Goal 7 remains **UNVERIFIED / AWAITING A
+  SEPARATE IGNORED-DIGEST UPDATE AND SAVED TASK-DEFINITION PLAN**. Evidence:
+  `docs/verification/GOAL-07-AOSS-SEARCH-IMAGE-PROMOTION-2026-08-21.md`.
+
+  The approved private revision-6 indexer task then reached AOSS and stopped
+  with exit code `1`. CloudWatch provided the precise HTTP rejection:
+  `HTTP 406; Content-Type header application/x-www-form-urlencoded is not
+  supported`. The failure is attributable to `search()` omitting its JSON
+  content type while passing a body to Python `urllib`; no retry occurred. The
+  offline remediation now sends explicit `application/json`, adds a fail-closed
+  body/content-type guard, and has passed static validation, 30 focused tests,
+  compilation, and diff checks. No image, Terraform, Databricks, AOSS, or ECS
+  operation occurred after that failed task. Goal 7 remains **UNVERIFIED /
+  AWAITING SEPARATE IMAGE PROMOTION AND TASK-DEFINITION CHECKPOINT FOR AOSS
+  CONTENT-TYPE REMEDIATION**. Evidence:
+  `docs/verification/GOAL-07-AOSS-SEARCH-CONTENT-TYPE-OFFLINE-REMEDIATION-2026-08-21.md`.
+
+  The corrected image was then pushed under immutable tag
+  `goal7-indexer-aoss-content-32d8209e`; local and remote inspection agree on
+  digest `sha256:7f1072ca1e969932a95c9fd53d97201a57cd25521f23d8663f5460af5b1b6586`.
+  ECR scan inspection returned `ScanNotFoundException` and was not retried.
+  No Terraform or ECS task operation occurred. Goal 7 remains **UNVERIFIED /
+  AWAITING SEPARATE IGNORED-DIGEST UPDATE AND SAVED TASK-DEFINITION PLAN**.
+  Evidence:
+  `docs/verification/GOAL-07-AOSS-SEARCH-CONTENT-TYPE-IMAGE-PROMOTION-2026-08-21.md`.
+
 - Goal 6 — Apache Doris serving layer is **VERIFIED** across FE/BE readiness, governed refresh, result contract, RBAC, query limits, audit, increment, rebuild, post-rebuild comparison, and final zero-drift. Immutable evidence commit: `d1bd8783dfe308db8d0165503ac06c31b043bd98`. Phase 6-0 read-only
   preflight completed on `2026-08-13` and is recorded in
   `docs/verification/GOAL-06-PHASE-6-0-PREFLIGHT-2026-08-13.md`. It
@@ -474,6 +950,7 @@ verification.
 | Goal 3B — Connected AWS deployment and smoke testing | VERIFIED | Bootstrap, development, VPC Flow Logs, static smoke-task foundations, dedicated NAT fallback, Redis revision 4, and the base RDS CPU alarm remediation were applied from separately approved saved plans. The reviewed implementation is committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`. Alarm plan SHA-256 `db143549fe551a397afac6b88248b8be74b48b689fa8a685c6868af43816f331` applied as `1 added, 1 changed, 0 destroyed`. | `docs/verification/GOAL-03B-CONNECTED-EXECUTION-2026-08-05.md`, committed at `634c67104d67e17d3bcd9747acbdbdc8ffc928a3`, records all three passing dynamic smoke checks, deterministic connected SG/AOSS unauthorized-path enforcement, VPC Flow Log ingestion, successful alarm apply, read-only CloudWatch/KMS verification, and final post-remediation zero-drift plan SHA-256 `db9ec9f069bf03d724689d1cf2a3347a43dd63c18df81f99463f18bf649d78be` exiting `0` with zero non-no-op resource/output changes. |
 | Goal 4 — Databricks, Unity Catalog, and Iceberg | VERIFIED — PROJECT ICEBERG-COMPATIBILITY PROFILE | Evidence commit `a778cfdfceaf6c704f98d83752c54c73a7d9208f` contains the reviewed staged Terraform, verified storage credential, development UC foundation, five-job bundle, durable reports, final zero-drift evidence, and current strict bundle-validation evidence. Tables API truth is seven managed Delta UniForm tables with Iceberg-compatible metadata in approved S3; the project owner approved retaining them as the fixed project representation without destructive recreation. Native Iceberg is no longer planned. | `docs/verification/GOAL-04-FINAL-VERIFICATION-2026-08-11.md`, `docs/verification/GOAL-04-NATIVE-ICEBERG-FORMAT-BLOCKER-2026-08-11.md`, and `docs/verification/GOAL-04-BUNDLE-SYNC-EXCLUDE-VERIFICATION-2026-08-12.md`; final Terraform plan SHA-256 `2fe6fd3eeeea72b703d27d10bba2cf5b0fcbdc27933ee2fb2857030ecab0edaa` reported 189 no-op and zero non-no-op actions, and the current bundle aggregate `49730c2fe6ccc38d15bc9511f626e17992d088eb4ced45eb745c22ff80769027` returned `Validation OK!`. |
 | Goal 5 MVP — Structured + Unstructured + CDC synthetic ingestion | VERIFIED — APPROVED DELTA UNIFORM ICEBERG-COMPATIBILITY PROFILE | Evidence commit `9c0d67b30db96a24d015c9cb79821b2fbb107f23` contains the reviewed typed ingestion framework, Terraform/bundle configuration, neutral fixtures, tests, runbooks, and all durable Goal 5 verification reports. | [Final verification](verification/GOAL-05-FINAL-VERIFICATION-2026-08-13.md), committed at `9c0d67b30db96a24d015c9cb79821b2fbb107f23`, maps all 44 criteria. Final plan SHA-256 `d2d57ef74c713f3e83349b225a87c48a2d2e7ac1cbbc4c3898c59f4ebcd0d6f1` exited `0` with `No changes`; all nine tables are accurately recorded as Unity Catalog managed Delta UniForm Iceberg interoperability, not native Iceberg. |
+| Goal 7 — Minimal integrated AI retrieval/agent demo | VERIFIED — MINIMAL DEVELOPMENT SYNTHETIC PROFILE | [Final verification](verification/GOAL-07-FINAL-VERIFICATION-2026-08-23.md); indexer R8 and integrated-demo task evidence, plus final zero-drift plan SHA-256 `f7e12fa235a79406de3dceb0daf4a4dd509dbc0367c50c1828720bfda5aa503b`. | Scoped development synthetic acceptance PASS: index/search, role-filtered retrieval, exactly three agents, analytics two-period result, private networking, and zero drift. ECR registry scan is UNVERIFIED; roadmap-scale benchmarks are deferred and not part of this reduced profile. |
 
 ## Current next checkpoint
 
@@ -2226,6 +2703,43 @@ complete 52-item acceptance matrix is recorded in
 acceptance evidence is complete and the evidence commit is immutable; this
 status update is intentionally a separate status-only commit under the
 repository freshness rule. No plan was applied.
+
+Goal 7 integrated-demo remediation is currently **OFFLINE-IMPLEMENTED / NOT
+CONNECTED**. The first integrated-demo task (`2ae16132e1574f9c978c666d081f006d`)
+stopped with exit code `1` after timing out to Doris FE `10.42.64.238:9030`.
+The repository contract had the FE ingress but no matching TCP/9030 egress on
+the dedicated Goal 7 task security group. The offline change adds exactly one
+gated SG-to-SG egress rule and updates static validation, regression tests, and
+documentation. A connected plan, apply, and task retry remain unapproved.
+Evidence: `docs/verification/GOAL-07-INTEGRATED-DEMO-DORIS-EGRESS-OFFLINE-REMEDIATION-2026-08-21.md`.
+
+The analytics two-period remediation then completed its separately approved
+digest-only Terraform planning checkpoint. Only the ignored development
+`goal_7_demo_image` input changed, to immutable digest
+`sha256:5ae9ece53e396313ea0a2dbfae4476933230a892eeebfb6c0ff9fbae84cd6c4f`.
+Offline Goal 7 preflight and the focused 39-test suite remained PASS. Saved
+plan `/tmp/goal7-analytics-two-period-taskdef-20260823.tfplan` has SHA-256
+`f9b98f34474a4dc0bda8f7e564c3013e43d1be8fd2ff4fa1591a993e63d86d23`.
+Machine-readable inspection found exactly one non-no-op action:
+`module.goal7_demo.aws_ecs_task_definition.this[0]` replacement to register
+the promoted runtime digest. There are zero other AWS/Databricks actions,
+creates, updates, replacements, or destroys. The saved plan has not been
+applied and no ECS task was run. Goal 7 remains **AWAITING SEPARATE APPROVAL
+TO APPLY THIS EXACT SAVED PLAN**, followed by one private integrated-demo
+retry. Evidence:
+`docs/verification/GOAL-07-ANALYTICS-TWO-PERIOD-OFFLINE-REMEDIATION-2026-08-23.md`.
+
+The exact saved plan was subsequently applied after hash/account/region
+revalidation. Terraform reported `1 added, 0 changed, 1 destroyed`, only for
+the reviewed integrated-demo task-definition replacement. Read-only ECS
+inspection confirmed `ask-david-development-goal7-integrated-demo:4` is ACTIVE,
+uses the exact promoted runtime digest
+`sha256:5ae9ece53e396313ea0a2dbfae4476933230a892eeebfb6c0ff9fbae84cd6c4f`,
+and has no RUNNING task. No ECS task, Databricks/SQL operation, or unrelated
+AWS mutation occurred. Goal 7 remains **AWAITING SEPARATE APPROVAL FOR ONE
+PRIVATE INTEGRATED-DEMO RETRY**; this apply alone does not verify runtime
+success. Evidence:
+`docs/verification/GOAL-07-ANALYTICS-TWO-PERIOD-OFFLINE-REMEDIATION-2026-08-23.md`.
 
 ## Freshness rules
 
