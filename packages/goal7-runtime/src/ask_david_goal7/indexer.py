@@ -264,8 +264,9 @@ class DatabricksSqlClient:
     def read_outbox(self, catalog: str, collection: str, index: str) -> list[ChunkRecord]:
         catalog = _safe_identifier(catalog, "catalog name")
         index = _safe_index(index)
+        # Catalog/index are validated and collection is SQL-escaped before this fixed SELECT.
         sql = (
-            "SELECT chunk_id, document_id, title, content, source_uri, allowed_roles, "
+            "SELECT chunk_id, document_id, title, content, source_uri, allowed_roles, "  # nosec B608
             "embedding_model_id, embedding "
             f"FROM {catalog}.green_sm_ai.goal7_vector_index_outbox "
             f"WHERE target_collection = {_sql_string(collection)} "
@@ -502,9 +503,7 @@ class AossClient:
     @classmethod
     def _failure(cls, operation: str, status: int, payload: Any) -> RuntimeError:
         if status == 0:
-            return RuntimeError(
-                f"AOSS {operation} transport failure; {cls._error_detail(payload)}"
-            )
+            return RuntimeError(f"AOSS {operation} transport failure; {cls._error_detail(payload)}")
         return RuntimeError(f"AOSS {operation} failed: HTTP {status}; {cls._error_detail(payload)}")
 
     def ensure_index(self, index: str, mapping: Mapping[str, Any]) -> None:

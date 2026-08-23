@@ -49,11 +49,11 @@ def test_goal6_uses_separate_cost_conscious_private_nodes() -> None:
     assert "expected_private_ip = var.be_private_ip" in source
     assert "precondition {" in source
     assert "selected_subnet_ipv4_hosts" in source
-    assert 'can(regex("/20$", data.aws_subnet.selected[0].cidr_block))' in source
+    assert 'can(regex("/20$", var.data_subnet_cidr_block))' in source
     assert "range(0, 16)" in source
     assert "range(0, 256)" in source
     assert "cidrhost(" in source
-    assert "data.aws_subnet.selected[0].cidr_block" in source
+    assert "var.data_subnet_cidr_block" in source
     assert "contains(local.selected_subnet_ipv4_hosts, var.fe_private_ip)" in source
     assert "contains(local.selected_subnet_ipv4_hosts, var.be_private_ip)" in source
     assert "cidrcontains(" not in source
@@ -85,10 +85,10 @@ def test_goal6_bootstrap_recovery_uses_adequate_root_storage_and_replaces_hosts(
     assert 'variable "goal_6_fe_bootstrap_generation"' in variables
     assert variables.count("default     = 30") == 2
     assert "default     = 2" in variables
-    assert "fe_root_volume_gib        = var.goal_6_fe_root_volume_gib" in wiring
-    assert "be_root_volume_gib        = var.goal_6_be_root_volume_gib" in wiring
-    assert "be_bootstrap_generation   = var.goal_6_be_bootstrap_generation" in wiring
-    assert "fe_bootstrap_generation   = var.goal_6_fe_bootstrap_generation" in wiring
+    assert "fe_root_volume_gib            = var.goal_6_fe_root_volume_gib" in wiring
+    assert "be_root_volume_gib            = var.goal_6_be_root_volume_gib" in wiring
+    assert "be_bootstrap_generation       = var.goal_6_be_bootstrap_generation" in wiring
+    assert "fe_bootstrap_generation       = var.goal_6_fe_bootstrap_generation" in wiring
 
 
 def test_goal6_rendered_ec2_user_data_has_a_fail_closed_aws_size_guard() -> None:
@@ -121,7 +121,7 @@ def test_goal6_serving_state_rebuild_is_explicit_and_preserves_old_volumes() -> 
 
     assert 'variable "goal_6_rebuild_serving_state"' in variables
     assert "default     = false" in variables
-    assert "rebuild_serving_state     = var.goal_6_rebuild_serving_state" in wiring
+    assert "rebuild_serving_state         = var.goal_6_rebuild_serving_state" in wiring
     assert 'resource "aws_ebs_volume" "fe_data_rebuild"' in source
     assert 'resource "aws_ebs_volume" "be_data_rebuild"' in source
     assert source.count("prevent_destroy = true") >= 4

@@ -138,17 +138,15 @@ module "opensearch_foundation" {
 module "goal7_indexer" {
   source = "../../modules/goal7-indexer"
 
-  enabled                    = var.goal_7_indexer_task_enabled
-  name_prefix                = local.name_prefix
-  region                     = var.aws_region
-  image                      = var.goal_7_indexer_image
-  execution_role_arn         = module.iam.task_execution_role_arn
-  workload_role_arn          = module.iam.workload_role_arn
-  application_subnet_ids     = module.network.application_subnet_ids
-  workload_security_group_id = local.goal7_task_security_group_id
-  runtime_log_group_name     = "/${local.name_prefix}/runtime"
-  databricks_workspace_host  = var.databricks_workspace_host
-  databricks_warehouse_id    = var.databricks_sql_warehouse_id
+  enabled                   = var.goal_7_indexer_task_enabled
+  name_prefix               = local.name_prefix
+  region                    = var.aws_region
+  image                     = var.goal_7_indexer_image
+  execution_role_arn        = module.iam.task_execution_role_arn
+  workload_role_arn         = module.iam.workload_role_arn
+  runtime_log_group_name    = "/${local.name_prefix}/runtime"
+  databricks_workspace_host = var.databricks_workspace_host
+  databricks_warehouse_id   = var.databricks_sql_warehouse_id
   # The indexer reads the governed Goal 7 outbox through the workflow
   # service principal.  The Doris external-read principal is deliberately
   # not granted SQL access and must never be used by this task.
@@ -174,8 +172,6 @@ module "goal7_demo" {
   image                       = var.goal_7_demo_image
   execution_role_arn          = module.iam.task_execution_role_arn
   workload_role_arn           = module.iam.workload_role_arn
-  application_subnet_ids      = module.network.application_subnet_ids
-  workload_security_group_id  = local.goal7_task_security_group_id
   runtime_log_group_name      = "/${local.name_prefix}/runtime"
   databricks_workspace_host   = var.databricks_workspace_host
   databricks_warehouse_id     = var.databricks_sql_warehouse_id

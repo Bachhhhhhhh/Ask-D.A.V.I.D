@@ -139,7 +139,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
     for marker in (
         'variable "goal_6_rebuild_serving_state"',
         "default     = false",
-        "rebuild_serving_state     = var.goal_6_rebuild_serving_state",
+        "rebuild_serving_state         = var.goal_6_rebuild_serving_state",
     ):
         if marker not in variables + goal6_tf:
             errors.append(f"Goal 6 serving-state rebuild gate is missing: {marker}")
@@ -181,11 +181,11 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         "expected_private_ip = var.be_private_ip",
         "precondition {",
         "selected_subnet_ipv4_hosts",
-        'can(regex("/20$", data.aws_subnet.selected[0].cidr_block))',
+        'can(regex("/20$", var.data_subnet_cidr_block))',
         "range(0, 16)",
         "range(0, 256)",
         "cidrhost(",
-        "data.aws_subnet.selected[0].cidr_block",
+        "var.data_subnet_cidr_block",
         "contains(local.selected_subnet_ipv4_hosts, var.fe_private_ip)",
         "contains(local.selected_subnet_ipv4_hosts, var.be_private_ip)",
         "associate_public_ip_address = false",
@@ -197,8 +197,8 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
                 f"Goal 6 Terraform is missing required private/synthetic control: {marker}"
             )
     for marker in (
-        "fe_private_ip             = var.goal_6_fe_private_ip",
-        "be_private_ip             = var.goal_6_be_private_ip",
+        "fe_private_ip                 = var.goal_6_fe_private_ip",
+        "be_private_ip                 = var.goal_6_be_private_ip",
     ):
         if marker not in goal6_tf:
             errors.append(
@@ -1098,6 +1098,7 @@ def validate_goal6_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
             "databricks/databricks.yml",
             "infrastructure/modules/iam/main.tf",
             "infrastructure/modules/iam/variables.tf",
+            "infrastructure/modules/databricks-identities/main.tf",
         }:
             continue
         if forbidden_scope.search(source):

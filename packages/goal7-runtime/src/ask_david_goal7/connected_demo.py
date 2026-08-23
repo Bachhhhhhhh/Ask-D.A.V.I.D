@@ -14,8 +14,8 @@ from .connected import (
     DatabricksEmbeddingProvider,
     DorisCliExecutor,
 )
-from .embedding import CANONICAL_EMBEDDING_CONFIG
 from .contracts import AgentResult
+from .embedding import CANONICAL_EMBEDDING_CONFIG
 from .graph import Goal7Runtime
 from .indexer import AossClient, DatabricksSqlClient
 from .services import AnalyticsService, QueryService, RetrievalService
@@ -130,10 +130,7 @@ def main() -> int:
         "status": "integrated-demo-completed",
         "question": _QUESTION,
         "answer": state.get("answer"),
-        "agent_statuses": {
-            key: getattr(state.get(key), "status", None)
-            for key in _AGENT_KEYS
-        },
+        "agent_statuses": {key: getattr(state.get(key), "status", None) for key in _AGENT_KEYS},
         "embedding_model_id": CANONICAL_EMBEDDING_CONFIG.model_id,
         "embedding_dimension": CANONICAL_EMBEDDING_CONFIG.dimension,
     }

@@ -90,7 +90,7 @@ class DorisCliExecutor(DorisExecutor):
             raise RuntimeError("connected Doris adapter rejected a mutating statement")
 
         try:
-            import pymysql  # type: ignore[import-not-found]
+            import pymysql  # type: ignore[import-untyped]
         except ImportError as error:
             raise RuntimeError("connected Goal 7 image is missing PyMySQL") from error
 
@@ -138,8 +138,9 @@ class DatabricksAnalyticsExecutor(AnalyticsExecutor):
         approved_datasets = ", ".join(
             _sql_string(dataset_id) for dataset_id in APPROVED_ANALYTICS_DATASETS
         )
+        # Catalog is identifier-validated; dataset literals are fixed and SQL-escaped.
         sql = (
-            "SELECT dataset_id, CAST(metric_date AS STRING) AS metric_date, "
+            "SELECT dataset_id, CAST(metric_date AS STRING) AS metric_date, "  # nosec B608
             "category, event_count, metric_total "
             f"FROM {catalog}.green_sm_business.goal5_structured_business_metrics "
             f"WHERE dataset_id IN ({approved_datasets}) "
@@ -170,9 +171,7 @@ class DatabricksAnalyticsExecutor(AnalyticsExecutor):
                 int(row["event_count"])
                 float(row["metric_total"])
             except (TypeError, ValueError) as error:
-                raise RuntimeError(
-                    "Databricks analytics source response was invalid"
-                ) from error
+                raise RuntimeError("Databricks analytics source response was invalid") from error
         return rows
 
 

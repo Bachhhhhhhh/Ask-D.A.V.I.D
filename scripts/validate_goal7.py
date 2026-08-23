@@ -229,7 +229,7 @@ def validate_goal7_repository(repository_root: Path = REPOSITORY_ROOT) -> list[s
         'resource "aws_vpc_security_group_egress_rule" "goal7_tasks_s3"',
         'resource "aws_vpc_security_group_ingress_rule" "goal7_tasks_to_aws_endpoints"',
         'resource "aws_vpc_security_group_egress_rule" "goal7_demo_to_doris"',
-        'referenced_security_group_id = module.doris_serving.fe_security_group_id',
+        "referenced_security_group_id = module.doris_serving.fe_security_group_id",
         "goal7_task_security_group_id",
         'cidr_ipv4         = "0.0.0.0/0"',
         "module.network.s3_gateway_prefix_list_id",

@@ -10,6 +10,8 @@ COPY packages/platform-foundation/pyproject.toml packages/platform-foundation/py
 COPY packages/platform-foundation/src packages/platform-foundation/src
 COPY packages/ingestion-framework/pyproject.toml packages/ingestion-framework/pyproject.toml
 COPY packages/ingestion-framework/src packages/ingestion-framework/src
+COPY packages/goal7-runtime/pyproject.toml packages/goal7-runtime/pyproject.toml
+COPY packages/goal7-runtime/src packages/goal7-runtime/src
 
 RUN uv sync --frozen --no-dev --all-packages
 

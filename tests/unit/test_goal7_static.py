@@ -46,6 +46,8 @@ from ask_david_goal7.services import (
 from scripts.validate_goal7 import validate_goal7_repository
 
 ROOT = Path(__file__).resolve().parents[2]
+_AOSS_ERROR_PREFIX = "AOSS vector search failed: HTTP 400; type=illegal_argument; "
+_AOSS_INVALID_KNN_ERROR = _AOSS_ERROR_PREFIX + "reason=invalid knn query"
 
 
 def test_goal7_static_contract_passes() -> None:
@@ -86,6 +88,26 @@ def test_goal7_indexer_and_demo_have_separate_image_contracts() -> None:
     assert "connected_demo" not in indexer
     assert "DORIS_FE_HOST" not in indexer
     assert "DORIS_FE_HOST" not in indexer_source
+
+
+def test_foundation_image_includes_the_goal7_workspace_package() -> None:
+    dockerfile = (ROOT / "docker/Dockerfile.foundation").read_text(encoding="utf-8")
+
+    assert (
+        "COPY packages/goal7-runtime/pyproject.toml packages/goal7-runtime/pyproject.toml"
+        in dockerfile
+    )
+    assert "COPY packages/goal7-runtime/src packages/goal7-runtime/src" in dockerfile
+
+
+def test_goal7_task_definition_modules_do_not_declare_unused_network_inputs() -> None:
+    for relative in (
+        "infrastructure/modules/goal7-indexer/variables.tf",
+        "infrastructure/modules/goal7-demo/variables.tf",
+    ):
+        variables = (ROOT / relative).read_text(encoding="utf-8")
+        assert 'variable "application_subnet_ids"' not in variables
+        assert 'variable "workload_security_group_id"' not in variables
 
 
 def test_goal7_workload_endpoint_egress_is_private_and_https_only() -> None:
@@ -132,20 +154,13 @@ def test_goal7_premium_nat_uses_a_dedicated_task_security_group() -> None:
 
 
 def test_goal7_demo_doris_path_has_sg_scoped_egress() -> None:
-    goal7 = (ROOT / "infrastructure/environments/development/goal7.tf").read_text(
-        encoding="utf-8"
-    )
-    start = goal7.index(
-        'resource "aws_vpc_security_group_egress_rule" "goal7_demo_to_doris"'
-    )
+    goal7 = (ROOT / "infrastructure/environments/development/goal7.tf").read_text(encoding="utf-8")
+    start = goal7.index('resource "aws_vpc_security_group_egress_rule" "goal7_demo_to_doris"')
     rule = goal7[start : goal7.index("\n}", start) + 2]
 
     assert "count = var.goal_7_demo_task_enabled ? 1 : 0" in rule
     assert "security_group_id            = local.goal7_task_security_group_id" in rule
-    assert (
-        "referenced_security_group_id = module.doris_serving.fe_security_group_id"
-        in rule
-    )
+    assert "referenced_security_group_id = module.doris_serving.fe_security_group_id" in rule
     assert 'ip_protocol                  = "tcp"' in rule
     assert "from_port                    = 9030" in rule
     assert "to_port                      = 9030" in rule
@@ -319,9 +334,9 @@ def test_goal7_analytics_readiness_sql_is_read_only_and_requires_two_periods() -
 
 
 def test_goal7_analytics_readiness_job_reuses_the_existing_warehouse() -> None:
-    resources = (
-        ROOT / "databricks/bundles/goal_07_retrieval/resources.yml"
-    ).read_text(encoding="utf-8")
+    resources = (ROOT / "databricks/bundles/goal_07_retrieval/resources.yml").read_text(
+        encoding="utf-8"
+    )
     readiness = resources.split("    goal7_analytics_readiness:", 1)[1]
 
     assert "verify_analytics_source" in readiness
@@ -634,7 +649,7 @@ def test_goal7_aoss_search_reports_bounded_http_error() -> None:
 
     with pytest.raises(
         RuntimeError,
-        match="AOSS vector search failed: HTTP 400; type=illegal_argument; reason=invalid knn query",
+        match=_AOSS_INVALID_KNN_ERROR,
     ):
         client.search("synthetic-document-chunks", (0.0,) * 1024, "business-reader")
 
