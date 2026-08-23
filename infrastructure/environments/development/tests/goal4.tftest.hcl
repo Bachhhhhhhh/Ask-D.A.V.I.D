@@ -79,6 +79,9 @@ variables {
   databricks_governance_admin_user_name = "governance-admin@example.invalid"
   goal_6_enabled                        = false
   goal_6_verifier_tasks_enabled         = false
+  goal_7_enabled                        = false
+  goal_7_indexer_task_enabled           = false
+  goal_7_demo_task_enabled              = false
 }
 
 run "goal4_disabled_has_no_managed_root_markers" {

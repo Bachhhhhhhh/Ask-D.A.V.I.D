@@ -4,6 +4,7 @@ output "workload_role_arn" { value = module.iam.workload_role_arn }
 output "ecs_cluster_name" { value = module.runtime.cluster_name }
 output "application_subnet_ids" { value = module.network.application_subnet_ids }
 output "workload_security_group_id" { value = module.network.workload_security_group_id }
+output "goal_7_task_security_group_id" { value = try(aws_security_group.goal7_tasks[0].id, null) }
 output "smoke_security_group_id" { value = module.network.smoke_security_group_id }
 output "smoke_task_definition_arns" { value = module.smoke_test.task_definition_arns }
 output "alert_topic_arn" { value = module.observability.alert_topic_arn }

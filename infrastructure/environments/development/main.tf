@@ -36,11 +36,14 @@ module "secrets" {
   source      = "../../modules/secrets"
   name_prefix = local.name_prefix
   kms_key_id  = module.kms.secrets_key_id
-  additional_containers = var.goal_6_enabled ? toset([
-    "doris/admin",
-    "doris/external-read-oauth",
-    "doris/query",
-  ]) : toset([])
+  additional_containers = setunion(
+    var.goal_6_enabled ? toset([
+      "doris/admin",
+      "doris/external-read-oauth",
+      "doris/query",
+    ]) : toset([]),
+    (var.goal_7_indexer_task_enabled || var.goal_7_demo_task_enabled) ? toset(["goal7/workflow-oauth"]) : toset([]),
+  )
   tags = local.tags
 }
 module "runtime" {
@@ -85,7 +88,20 @@ module "iam" {
     module.secrets.secret_arns["doris/query"],
   ] : []
   goal6_secrets_kms_key_arn = var.goal_6_enabled ? module.kms.secrets_key_arn : null
-  tags                      = local.tags
+  goal7_enabled             = var.goal_7_enabled
+  goal7_collection_name     = var.goal_7_collection_name
+  goal7_secrets_enabled     = var.goal_7_indexer_task_enabled || var.goal_7_demo_task_enabled
+  goal7_secret_arns = distinct(concat(
+    var.goal_7_indexer_task_enabled ? [module.secrets.secret_arns["goal7/workflow-oauth"]] : [],
+    var.goal_7_demo_task_enabled ? [
+      module.secrets.secret_arns["goal7/workflow-oauth"],
+      module.secrets.secret_arns["doris/query"],
+    ] : [],
+  ))
+  goal7_secrets_kms_key_arn = (
+    var.goal_7_indexer_task_enabled || var.goal_7_demo_task_enabled
+  ) ? module.kms.secrets_key_arn : null
+  tags = local.tags
 }
 module "ecr_pull_through" {
   source = "../../modules/ecr-pull-through"
@@ -107,11 +123,73 @@ module "smoke_test" {
   depends_on = [module.ecr_pull_through]
 }
 module "opensearch_foundation" {
-  source             = "../../modules/opensearch-foundation"
-  enabled            = var.enable_opensearch_foundation
-  name_prefix        = local.name_prefix
-  collection_prefix  = var.opensearch_collection_prefix
-  vpc_id             = module.network.vpc_id
-  subnet_ids         = module.network.application_subnet_ids
-  security_group_ids = [module.network.aoss_endpoint_security_group_id]
+  source                    = "../../modules/opensearch-foundation"
+  enabled                   = var.enable_opensearch_foundation
+  name_prefix               = local.name_prefix
+  collection_prefix         = var.opensearch_collection_prefix
+  vpc_id                    = module.network.vpc_id
+  subnet_ids                = module.network.application_subnet_ids
+  security_group_ids        = [module.network.aoss_endpoint_security_group_id]
+  knowledge_enabled         = var.goal_7_enabled
+  knowledge_collection_name = var.goal_7_collection_name
+  knowledge_principal_arns  = [module.iam.workload_role_arn]
+}
+
+module "goal7_indexer" {
+  source = "../../modules/goal7-indexer"
+
+  enabled                    = var.goal_7_indexer_task_enabled
+  name_prefix                = local.name_prefix
+  region                     = var.aws_region
+  image                      = var.goal_7_indexer_image
+  execution_role_arn         = module.iam.task_execution_role_arn
+  workload_role_arn          = module.iam.workload_role_arn
+  application_subnet_ids     = module.network.application_subnet_ids
+  workload_security_group_id = local.goal7_task_security_group_id
+  runtime_log_group_name     = "/${local.name_prefix}/runtime"
+  databricks_workspace_host  = var.databricks_workspace_host
+  databricks_warehouse_id    = var.databricks_sql_warehouse_id
+  # The indexer reads the governed Goal 7 outbox through the workflow
+  # service principal.  The Doris external-read principal is deliberately
+  # not granted SQL access and must never be used by this task.
+  databricks_oauth_secret_arn = try(module.secrets.secret_arns["goal7/workflow-oauth"], null)
+  catalog_name                = var.databricks_catalog_name
+  aoss_endpoint               = module.opensearch_foundation.knowledge_collection_endpoint
+  collection_name             = var.goal_7_collection_name
+  index_name                  = var.goal_7_vector_index_name
+  tags                        = local.tags
+
+  depends_on = [module.opensearch_foundation, aws_secretsmanager_secret_version.goal7_workflow_oauth]
+}
+
+module "goal7_demo" {
+  source = "../../modules/goal7-demo"
+
+  enabled     = var.goal_7_demo_task_enabled
+  name_prefix = local.name_prefix
+  region      = var.aws_region
+  # The integrated demo has a different entry-point contract from the
+  # outbox indexer. Keep its image independently digest-pinned so a stale
+  # demo artifact can never be invoked as the indexer task.
+  image                       = var.goal_7_demo_image
+  execution_role_arn          = module.iam.task_execution_role_arn
+  workload_role_arn           = module.iam.workload_role_arn
+  application_subnet_ids      = module.network.application_subnet_ids
+  workload_security_group_id  = local.goal7_task_security_group_id
+  runtime_log_group_name      = "/${local.name_prefix}/runtime"
+  databricks_workspace_host   = var.databricks_workspace_host
+  databricks_warehouse_id     = var.databricks_sql_warehouse_id
+  databricks_oauth_secret_arn = try(module.secrets.secret_arns["goal7/workflow-oauth"], null)
+  doris_query_secret_arn      = try(module.secrets.secret_arns["doris/query"], null)
+  doris_fe_private_ip         = module.doris_serving.fe_private_ip
+  catalog_name                = var.databricks_catalog_name
+  aoss_endpoint               = module.opensearch_foundation.knowledge_collection_endpoint
+  index_name                  = var.goal_7_vector_index_name
+  tags                        = local.tags
+
+  depends_on = [
+    module.opensearch_foundation,
+    aws_secretsmanager_secret_version.goal7_workflow_oauth,
+    aws_secretsmanager_secret_version.goal6_doris_query,
+  ]
 }

@@ -12,3 +12,30 @@ variable "goal6_secrets_kms_key_arn" {
   default     = null
   nullable    = true
 }
+variable "goal7_enabled" {
+  description = "Enable the narrowly scoped OpenSearch Serverless data-plane API permission for Goal 7."
+  type        = bool
+  default     = false
+}
+variable "goal7_collection_name" {
+  description = "Collection-name condition for the Goal 7 AOSS API permission."
+  type        = string
+  default     = null
+  nullable    = true
+}
+variable "goal7_secret_arns" {
+  description = "Exact Goal 7 secret ARNs that ECS task execution may read."
+  type        = list(string)
+  default     = []
+}
+variable "goal7_secrets_enabled" {
+  description = "Plan-time gate for the exact Goal 7 task-execution secret policy."
+  type        = bool
+  default     = false
+}
+variable "goal7_secrets_kms_key_arn" {
+  description = "KMS key encrypting the Goal 7 OAuth secret container."
+  type        = string
+  default     = null
+  nullable    = true
+}

@@ -23,6 +23,13 @@ rds_cpu_alarm_threshold_percent = 90
 enable_opensearch_foundation = false
 opensearch_collection_prefix = "ask-david"
 
+# Goal 7's private indexer remains disabled until its image is scanned/pushed
+# and a separate Terraform plan is reviewed.
+goal_7_indexer_task_enabled = false
+# goal_7_demo_task_enabled = false
+# goal_7_indexer_image = "REPLACE_WITH_PRIVATE_GOAL7_INDEXER_IMAGE@sha256:<64-hex>"
+# goal_7_demo_image = "REPLACE_WITH_PRIVATE_GOAL7_RUNTIME_IMAGE@sha256:<64-hex>"
+
 # Goal 4 is inert by default. Set bootstrap only for the separately reviewed
 # initial-role plan. Keep self-assumption false until that apply succeeds; then
 # set it true for a separately reviewed trust-policy-only plan. Set active only

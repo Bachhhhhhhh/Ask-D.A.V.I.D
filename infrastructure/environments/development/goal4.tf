@@ -70,6 +70,9 @@ module "databricks_identities" {
   doris_external_read_service_principal_name = (
     var.goal_6_enabled ? local.goal_6_doris_external_read_service_principal_name : null
   )
+  goal7_indexer_enabled = (
+    var.goal_7_indexer_task_enabled || var.goal_7_demo_task_enabled
+  )
 }
 
 module "databricks_lakehouse" {

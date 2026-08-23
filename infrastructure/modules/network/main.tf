@@ -221,6 +221,18 @@ resource "aws_vpc_security_group_ingress_rule" "aws_endpoints_workload" {
   referenced_security_group_id = aws_security_group.workload.id
 }
 
+# Goal 7 private ECS workloads need to retrieve their injected Secrets Manager
+# value and reach the other existing AWS interface endpoints. Keep this as one
+# standalone SG-to-SG rule: no public CIDR fallback is permitted for workloads.
+resource "aws_vpc_security_group_egress_rule" "workload_aws_endpoints" {
+  security_group_id            = aws_security_group.workload.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = aws_security_group.aws_endpoints.id
+  description                  = "Goal 7 private workload access to AWS interface endpoints"
+}
+
 data "aws_region" "current" {}
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.this.id
@@ -228,6 +240,18 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_endpoint_type = "Gateway"
   route_table_ids   = [aws_route_table.private.id]
 }
+
+# ECR image layers can redirect to S3. Permit the private Goal 7 workload to
+# use the existing S3 gateway endpoint without allowing public/CIDR egress.
+resource "aws_vpc_security_group_egress_rule" "workload_s3" {
+  security_group_id = aws_security_group.workload.id
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  prefix_list_id    = aws_vpc_endpoint.s3.prefix_list_id
+  description       = "Goal 7 private workload access to S3 gateway endpoint for image layers"
+}
+
 resource "aws_vpc_endpoint" "interface" {
   for_each            = toset(["ecr.api", "ecr.dkr", "logs", "secretsmanager"])
   vpc_id              = aws_vpc.this.id

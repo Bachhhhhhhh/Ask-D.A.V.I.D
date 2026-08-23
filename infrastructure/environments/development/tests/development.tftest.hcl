@@ -36,6 +36,9 @@ run "development_foundation_is_plannable" {
     goal_4_stage                    = "disabled"
     goal_6_enabled                  = false
     goal_6_verifier_tasks_enabled   = false
+    goal_7_enabled                  = false
+    goal_7_indexer_task_enabled     = false
+    goal_7_demo_task_enabled        = false
   }
 
   assert {
@@ -74,6 +77,9 @@ run "development_defines_static_synthetic_smoke_tasks" {
     goal_4_stage                    = "disabled"
     goal_6_enabled                  = false
     goal_6_verifier_tasks_enabled   = false
+    goal_7_enabled                  = false
+    goal_7_indexer_task_enabled     = false
+    goal_7_demo_task_enabled        = false
   }
 
   assert {

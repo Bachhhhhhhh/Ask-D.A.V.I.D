@@ -1,0 +1,68 @@
+resources:
+  jobs:
+    goal7_document_embedding:
+      name: ask-david-development-goal7-document-embedding
+      description: Neutral synthetic document normalization, chunking, and embedding handoff.
+      max_concurrent_runs: 1
+      queue:
+        enabled: false
+      tags:
+        data_classification: synthetic-only
+        environment: development
+        goal: goal-07
+      tasks:
+        - task_key: prepare_document_chunks
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_07/01_prepare_document_chunks.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              document_source_uri: ${var.goal5_document_source_uri}
+              embedding_model_id: ${var.goal7_embedding_model_id}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: emit_vector_index_outbox
+          depends_on:
+            - task_key: prepare_document_chunks
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_07/02_emit_vector_index_outbox.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              collection_name: ${var.goal7_collection_name}
+              index_name: ${var.goal7_vector_index_name}
+              embedding_model_id: ${var.goal7_embedding_model_id}
+              embedding_dimension: ${var.goal7_embedding_dimension}
+            warehouse_id: ${var.warehouse_id}
+        - task_key: verify_vector_payload
+          depends_on:
+            - task_key: emit_vector_index_outbox
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_07/03_verify_vector_payload.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+              embedding_model_id: ${var.goal7_embedding_model_id}
+              embedding_dimension: ${var.goal7_embedding_dimension}
+            warehouse_id: ${var.warehouse_id}
+    goal7_analytics_readiness:
+      name: ask-david-development-goal7-analytics-readiness
+      description: Read-only readiness gate for the two approved synthetic analytics periods.
+      max_concurrent_runs: 1
+      queue:
+        enabled: false
+      tags:
+        data_classification: synthetic-only
+        environment: development
+        goal: goal-07
+      tasks:
+        - task_key: verify_analytics_source
+          sql_task:
+            file:
+              path: ${workspace.file_path}/sql/goal_07/04_verify_analytics_source.sql
+              source: WORKSPACE
+            parameters:
+              catalog_name: ${var.catalog_name}
+            warehouse_id: ${var.warehouse_id}

@@ -14,6 +14,11 @@ output "workflow_service_principal_application_id" {
   value = try(databricks_service_principal.workflow[0].application_id, null)
 }
 
+output "workflow_service_principal_secret" {
+  value     = try(databricks_service_principal_secret.workflow[0].secret, null)
+  sensitive = true
+}
+
 output "denied_service_principal_application_id" {
   value = try(databricks_service_principal.denied_test[0].application_id, null)
 }

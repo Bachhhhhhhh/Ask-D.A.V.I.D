@@ -5,6 +5,7 @@ include:
   - bundles/goal_04_lakehouse/resources.yml
   - bundles/goal_05_ingestion/resources.yml
   - bundles/goal_06_doris/resources.yml
+  - bundles/goal_07_retrieval/resources.yml
 
 variables:
   warehouse_id:
@@ -37,6 +38,17 @@ variables:
     default: "1.0"
   goal6_increment_source_uri:
     description: Terraform-derived neutral Goal 6 increment CSV URI.
+  goal7_collection_name:
+    description: Terraform-derived single Goal 7 OpenSearch Serverless vector collection name.
+  goal7_vector_index_name:
+    description: Controlled Goal 7 vector index name.
+    default: synthetic-document-chunks
+  goal7_embedding_model_id:
+    description: Canonical Databricks embedding model ID shared by index and query paths.
+    default: databricks-gte-large-en
+  goal7_embedding_dimension:
+    description: Canonical embedding vector dimension.
+    default: "1024"
 
 run_as:
   service_principal_name: ${var.workflow_service_principal_application_id}
@@ -56,6 +68,7 @@ sync:
     - sql/goal_04/*.sql
     - sql/goal_05/*.sql
     - sql/goal_06/*.sql
+    - sql/goal_07/*.sql
   exclude:
     - sql/goal_04/remediation/**
 

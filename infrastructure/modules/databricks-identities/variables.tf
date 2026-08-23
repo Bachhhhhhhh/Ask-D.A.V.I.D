@@ -13,3 +13,9 @@ variable "doris_external_read_service_principal_name" {
   default     = null
   nullable    = true
 }
+
+variable "goal7_indexer_enabled" {
+  description = "Create the workflow OAuth secret only when the Goal 7 indexer task is enabled."
+  type        = bool
+  default     = false
+}

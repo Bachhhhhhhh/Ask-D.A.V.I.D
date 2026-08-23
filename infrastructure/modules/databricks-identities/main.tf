@@ -34,6 +34,17 @@ resource "databricks_service_principal" "workflow" {
   disable_as_user_deletion = true
 }
 
+resource "databricks_service_principal_secret" "workflow" {
+  count = var.enabled && var.goal7_indexer_enabled ? 1 : 0
+
+  provider             = databricks.account
+  service_principal_id = databricks_service_principal.workflow[0].id
+  lifetime             = "2592000s"
+  provider_config {
+    workspace_id = var.workspace_id
+  }
+}
+
 resource "databricks_service_principal" "denied_test" {
   count = var.enabled ? 1 : 0
 
