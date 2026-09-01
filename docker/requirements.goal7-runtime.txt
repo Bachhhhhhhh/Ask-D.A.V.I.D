@@ -1,2 +1,2 @@
-langgraph==1.2.9
+langgraph==1.2.11
 PyMySQL==1.2.0
